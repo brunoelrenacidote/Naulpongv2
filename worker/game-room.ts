@@ -2,7 +2,10 @@
 
 import {
   ClientMessage,
+  FIELD_H,
+  FIELD_W,
   GameState,
+  PADDLE_W,
   ServerMessage,
   Side,
   TICK_MS,
@@ -13,6 +16,8 @@ import {
   startCountdown,
   tick as gameTick,
 } from "../src/lib/game-logic";
+
+type BotDifficulty = "easy" | "medium" | "hard";
 
 interface PlayerSlot {
   id: string;
@@ -40,6 +45,11 @@ export class GameRoom implements DurableObject {
   spectators = new Map<string, WebSocket>();
   loopInterval: ReturnType<typeof setInterval> | null = null;
   lastTick = 0;
+  botEnabled = false;
+  botDifficulty: BotDifficulty = "medium";
+  botSide: Side | null = null;
+  botInput = { up: false, down: false, targetY: null as number | null };
+  botJitterPhase = Math.random() * Math.PI * 2;
 
   constructor(_ctx: DurableObjectState, _env: unknown) {
     this.state = createInitialState(Date.now());
@@ -49,6 +59,14 @@ export class GameRoom implements DurableObject {
     const upgrade = request.headers.get("Upgrade");
     if (upgrade !== "websocket") {
       return new Response("Expected WebSocket", { status: 426 });
+    }
+    // Bot mode: opt in via ?bot=1 (and optional ?difficulty=easy|medium|hard).
+    // The flag sticks for the lifetime of the DO instance.
+    const url = new URL(request.url);
+    if (url.searchParams.get("bot") === "1") {
+      this.botEnabled = true;
+      const d = url.searchParams.get("difficulty");
+      if (d === "easy" || d === "medium" || d === "hard") this.botDifficulty = d;
     }
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
@@ -74,9 +92,16 @@ export class GameRoom implements DurableObject {
       };
       this.players.set(id, slot);
       this.send(ws, { type: "assign", you: free, playerId: id });
+
+      if (this.botEnabled && !this.botSide) {
+        this.attachBot();
+      }
+
       this.broadcastState();
 
-      if (this.players.size === 2 && this.state.phase === "WAITING") {
+      const enoughToStart =
+        this.players.size === 2 || (this.botEnabled && this.botSide);
+      if (enoughToStart && this.state.phase === "WAITING") {
         startCountdown(this.state, Date.now());
         this.startLoop();
       }
@@ -126,6 +151,10 @@ export class GameRoom implements DurableObject {
     } else if (msg.type === "rematch") {
       if (this.state.phase !== "FINISHED") return;
       this.state.rematchVotes[slot.side] = true;
+      // Auto-confirm bot's rematch vote
+      if (this.botEnabled && this.botSide) {
+        this.state.rematchVotes[this.botSide] = true;
+      }
       if (this.state.rematchVotes.left && this.state.rematchVotes.right) {
         startCountdown(this.state, Date.now());
         this.startLoop();
@@ -142,9 +171,98 @@ export class GameRoom implements DurableObject {
         this.state.phase = "WAITING";
         this.stopLoop();
       }
+      // If the human leaves a bot match, drop the bot too
+      if (this.botEnabled && this.players.size === 0) {
+        this.detachBot();
+      }
       this.broadcastState();
     }
     this.spectators.delete(id);
+  }
+
+  attachBot() {
+    const sides: Side[] = ["left", "right"];
+    const taken = new Set<Side>(
+      Array.from(this.players.values()).map((p) => p.side),
+    );
+    const free = sides.find((s) => !taken.has(s));
+    if (!free) return;
+    this.botSide = free;
+    this.state.nicks[free] = "BOT";
+    this.botInput = { up: false, down: false, targetY: null };
+  }
+
+  detachBot() {
+    if (!this.botSide) return;
+    this.state.nicks[this.botSide] = "";
+    this.botSide = null;
+    this.botInput = { up: false, down: false, targetY: null };
+  }
+
+  updateBotInput(now: number) {
+    const side = this.botSide;
+    if (!side) return;
+    const paddle = this.state.paddles[side];
+    const ball = this.state.ball;
+    const ballCx = ball.x + ball.size / 2;
+    const ballCy = ball.y + ball.size / 2;
+    const paddleX = side === "left" ? PADDLE_W / 2 : FIELD_W - PADDLE_W / 2;
+    const ballMovingTowardBot =
+      (side === "left" && ball.vx < 0) || (side === "right" && ball.vx > 0);
+
+    let targetCy: number;
+    if (ballMovingTowardBot && Math.abs(ball.vx) > 1) {
+      // Predict where the ball will be when it reaches the paddle
+      const dx = paddleX - ballCx;
+      const tHit = dx / ball.vx;
+      let predicted = ballCy + ball.vy * tHit;
+      // Account for top/bottom wall bounces during prediction
+      const top = 0;
+      const bottom = FIELD_H;
+      const range = bottom - top;
+      let bouncedY = predicted - top;
+      bouncedY = ((bouncedY % (2 * range)) + 2 * range) % (2 * range);
+      if (bouncedY > range) bouncedY = 2 * range - bouncedY;
+      predicted = top + bouncedY;
+      targetCy = predicted;
+    } else {
+      // Drift toward center while waiting
+      targetCy = FIELD_H / 2;
+    }
+
+    // Difficulty modifiers
+    let aimNoise = 0;
+    let speedScale = 1;
+    if (this.botDifficulty === "easy") {
+      aimNoise = 32;
+      speedScale = 0.55;
+    } else if (this.botDifficulty === "medium") {
+      aimNoise = 14;
+      speedScale = 0.8;
+    } else if (this.botDifficulty === "hard") {
+      aimNoise = 4;
+      speedScale = 1;
+    }
+    // Wobble so the bot doesn't feel robotic
+    targetCy +=
+      Math.sin(now / 420 + this.botJitterPhase) * aimNoise * 0.6 +
+      (Math.random() - 0.5) * aimNoise * 0.4;
+
+    // Convert center target to paddle.y
+    let targetY = targetCy - paddle.height / 2;
+    if (targetY < 0) targetY = 0;
+    if (targetY > FIELD_H - paddle.height) targetY = FIELD_H - paddle.height;
+
+    // Approach with limited speed by lerping the targetY we send.
+    // The game loop already enforces PADDLE_DRAG_SPEED; we slow the bot by
+    // not letting its requested target jump faster than its skill allows.
+    const cur = paddle.y;
+    const maxStep = 240 * speedScale * (TICK_MS / 1000);
+    let smoothed: number;
+    if (Math.abs(targetY - cur) <= maxStep) smoothed = targetY;
+    else smoothed = cur + Math.sign(targetY - cur) * maxStep;
+
+    this.botInput = { up: false, down: false, targetY: smoothed };
   }
 
   startLoop() {
@@ -165,6 +283,10 @@ export class GameRoom implements DurableObject {
     const dt = Math.min(0.1, (now - this.lastTick) / 1000);
     this.lastTick = now;
 
+    if (this.botEnabled && this.botSide) {
+      this.updateBotInput(now);
+    }
+
     const inputs: Inputs = {
       left: { up: false, down: false, targetY: null },
       right: { up: false, down: false, targetY: null },
@@ -173,6 +295,9 @@ export class GameRoom implements DurableObject {
       if (p.side === "left") inputs.left = p.input;
       else inputs.right = p.input;
     });
+    if (this.botEnabled && this.botSide) {
+      inputs[this.botSide] = this.botInput;
+    }
 
     gameTick(this.state, inputs, dt, now);
     this.broadcastState();

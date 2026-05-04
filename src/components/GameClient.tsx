@@ -30,7 +30,8 @@ import {
 interface Props {
   code: string;
   isHost: boolean;
-  mode: "quick" | "private";
+  mode: "quick" | "private" | "bot";
+  botDifficulty?: "easy" | "medium" | "hard";
 }
 
 interface InputState {
@@ -44,7 +45,7 @@ function readNick(): string {
   return (window.localStorage.getItem("naulpong:nick") ?? "").toUpperCase();
 }
 
-export default function GameClient({ code, mode }: Props) {
+export default function GameClient({ code, mode, botDifficulty }: Props) {
   const [state, setState] = useState<GameState | null>(null);
   const [you, setYou] = useState<Side | "spectator">("spectator");
   const [connected, setConnected] = useState(false);
@@ -70,6 +71,10 @@ export default function GameClient({ code, mode }: Props) {
     const ws = new PartySocket({
       host: partyHost(),
       room: code.toLowerCase(),
+      query:
+        mode === "bot"
+          ? { bot: "1", difficulty: botDifficulty ?? "medium" }
+          : undefined,
     });
     wsRef.current = ws;
     ws.addEventListener("open", () => {

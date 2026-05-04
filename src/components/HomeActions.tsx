@@ -24,7 +24,7 @@ function sanitizeNick(raw: string): string {
     .slice(0, NICK_MAX);
 }
 
-type Mode = "menu" | "queue" | "join";
+type Mode = "menu" | "queue" | "join" | "bot";
 
 export default function HomeActions() {
   const router = useRouter();
@@ -126,6 +126,13 @@ export default function HomeActions() {
     router.push(`/play/${c}`);
   }
 
+  function startBot(diff: "easy" | "medium" | "hard") {
+    setError(null);
+    if (!ensureNick()) return;
+    const c = generateCode();
+    router.push(`/play/${c}?host=1&bot=1&diff=${diff}`);
+  }
+
   if (mode === "queue") {
     return (
       <div className="font-press flex flex-col items-center gap-6 text-center">
@@ -140,6 +147,43 @@ export default function HomeActions() {
         <p className="glow-cyan text-[10px] sm:text-xs">JUGADOR: {nick}</p>
         <button className="btn-arcade pink" onClick={cancelQueue}>
           CANCELAR
+        </button>
+      </div>
+    );
+  }
+
+  if (mode === "bot") {
+    return (
+      <div className="flex w-full max-w-sm flex-col items-center gap-4">
+        <p className="font-press glow-cyan text-xs">ELEGÍ DIFICULTAD</p>
+        <div className="flex w-full flex-col items-stretch gap-3">
+          <button
+            className="btn-arcade"
+            onClick={() => startBot("easy")}
+          >
+            🟢 FÁCIL
+          </button>
+          <button
+            className="btn-arcade yellow"
+            onClick={() => startBot("medium")}
+          >
+            🟡 MEDIO
+          </button>
+          <button
+            className="btn-arcade pink"
+            onClick={() => startBot("hard")}
+          >
+            🔴 DIFÍCIL
+          </button>
+        </div>
+        {error && (
+          <p className="font-press glow-pink text-[10px]">! {error}</p>
+        )}
+        <button
+          className="btn-arcade pink mt-2"
+          onClick={() => setMode("menu")}
+        >
+          VOLVER
         </button>
       </div>
     );
@@ -200,6 +244,9 @@ export default function HomeActions() {
       </button>
       <button className="btn-arcade pink" onClick={() => setMode("join")}>
         🔑 UNIRSE CON CÓDIGO
+      </button>
+      <button className="btn-arcade" onClick={() => { setError(null); if (ensureNick()) setMode("bot"); }}>
+        🤖 PRÁCTICA VS BOT
       </button>
       {error && (
         <p className="font-press glow-pink mt-2 text-center text-[10px]">
