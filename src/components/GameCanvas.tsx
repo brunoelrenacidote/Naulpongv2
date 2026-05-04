@@ -14,6 +14,7 @@ import {
 } from "@/lib/game-types";
 import { Pose, SPRITE_H, SPRITE_W } from "@/lib/character-sprites";
 import { drawCharacter, preloadSprites } from "@/lib/sprite-loader";
+import { pickTaunt } from "@/lib/taunts";
 
 const DRAW_SCALE = 3;
 
@@ -54,13 +55,23 @@ interface Crowdy {
   hatColor: string;
 }
 
+interface Taunt {
+  side: Side;
+  text: string;
+  color: string;
+  bornAt: number;
+  ttl: number; // ms total
+}
+
 interface Anim {
   particles: Particle[];
   trail: TrailPoint[];
   stars: Star[];
   crowd: Crowdy[];
+  taunts: Taunt[];
   lastEventT: number;
   lastFrameT: number;
+  lastWinner: Side | null;
 }
 
 function makeStars(): Star[] {
@@ -101,8 +112,10 @@ export default function GameCanvas({ state, you }: Props) {
     trail: [],
     stars: makeStars(),
     crowd: makeCrowd(),
+    taunts: [],
     lastEventT: 0,
     lastFrameT: 0,
+    lastWinner: null,
   });
 
   useEffect(() => {
@@ -219,10 +232,18 @@ function drawFrame(
     return;
   }
 
-  // Spawn event-based particles
+  // Spawn event-based particles + taunts
   if (state.lastEvent && state.lastEvent.t !== anim.lastEventT) {
     anim.lastEventT = state.lastEvent.t;
     spawnEventParticles(state, anim);
+    queueGoalTaunts(state, anim, frameT);
+  }
+  // Trigger end-of-match taunts once winner is decided
+  if (state.phase === "FINISHED" && state.winner && anim.lastWinner !== state.winner) {
+    anim.lastWinner = state.winner;
+    queueWinTaunts(state, anim, frameT);
+  } else if (state.phase !== "FINISHED" && anim.lastWinner !== null) {
+    anim.lastWinner = null;
   }
 
   // Update + draw particles
@@ -266,6 +287,9 @@ function drawFrame(
   ctx.textBaseline = "top";
   ctx.fillText(truncate(state.nicks?.left || "P1", 8), FIELD_W / 2 - 28, 24);
   ctx.fillText(truncate(state.nicks?.right || "P2", 8), FIELD_W / 2 + 28, 24);
+
+  // Taunts (speech bubbles) — drawn in field coords, scaled, so they pixelate
+  drawTaunts(ctx, anim.taunts, state, frameT);
 
   ctx.restore();
 
@@ -429,6 +453,157 @@ function spawnEventParticles(state: GameState, anim: Anim) {
       break;
     }
   }
+}
+
+function queueGoalTaunts(state: GameState, anim: Anim, frameT: number) {
+  const ev = state.lastEvent;
+  if (!ev || ev.kind !== "goal" || !ev.side) return;
+  const scorer = ev.side;
+  const loser: Side = scorer === "left" ? "right" : "left";
+  // Limit one taunt per side at a time
+  anim.taunts = anim.taunts.filter((t) => t.side !== scorer && t.side !== loser);
+  const scorerCh = CHARACTERS[state.characters[scorer]];
+  const loserCh = CHARACTERS[state.characters[loser]];
+  anim.taunts.push({
+    side: scorer,
+    text: pickTaunt(state.characters[scorer], "goal"),
+    color: scorerCh.color,
+    bornAt: frameT,
+    ttl: 2400,
+  });
+  anim.taunts.push({
+    side: loser,
+    text: pickTaunt(state.characters[loser], "takeGoal"),
+    color: loserCh.color,
+    bornAt: frameT + 250, // slight delay so they don't both pop at once
+    ttl: 2200,
+  });
+}
+
+function queueWinTaunts(state: GameState, anim: Anim, frameT: number) {
+  if (!state.winner) return;
+  const winner = state.winner;
+  const loser: Side = winner === "left" ? "right" : "left";
+  anim.taunts = anim.taunts.filter((t) => t.side !== winner && t.side !== loser);
+  const winnerCh = CHARACTERS[state.characters[winner]];
+  const loserCh = CHARACTERS[state.characters[loser]];
+  anim.taunts.push({
+    side: winner,
+    text: pickTaunt(state.characters[winner], "win"),
+    color: winnerCh.color,
+    bornAt: frameT + 400,
+    ttl: 4000,
+  });
+  anim.taunts.push({
+    side: loser,
+    text: pickTaunt(state.characters[loser], "lose"),
+    color: loserCh.color,
+    bornAt: frameT + 800,
+    ttl: 3600,
+  });
+}
+
+function drawTaunts(
+  ctx: CanvasRenderingContext2D,
+  taunts: Taunt[],
+  state: GameState,
+  frameT: number,
+) {
+  for (let i = taunts.length - 1; i >= 0; i--) {
+    const t = taunts[i];
+    const age = frameT - t.bornAt;
+    if (age < 0) continue;
+    if (age > t.ttl) {
+      taunts.splice(i, 1);
+      continue;
+    }
+    // fade in fast, fade out last 400ms
+    let alpha = 1;
+    if (age < 100) alpha = age / 100;
+    else if (age > t.ttl - 400) alpha = Math.max(0, (t.ttl - age) / 400);
+    drawSpeechBubble(ctx, state, t.side, t.text, t.color, alpha, frameT);
+  }
+}
+
+function drawSpeechBubble(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  side: Side,
+  text: string,
+  color: string,
+  alpha: number,
+  frameT: number,
+) {
+  if (!text) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = '6px "Press Start 2P", monospace';
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  // Wrap text to roughly fit
+  const maxCharsPerLine = 14;
+  const lines: string[] = [];
+  const words = text.split(" ");
+  let cur = "";
+  for (const w of words) {
+    if ((cur + " " + w).trim().length > maxCharsPerLine && cur) {
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = (cur ? cur + " " : "") + w;
+    }
+  }
+  if (cur) lines.push(cur);
+
+  const lineH = 9;
+  const padX = 4;
+  const padY = 4;
+  const textW =
+    Math.max(...lines.map((l) => l.length)) * 5 + 1; // ~5px per char at 6px font
+  const w = textW + padX * 2;
+  const h = lines.length * lineH + padY * 2 - 2;
+
+  // Anchor near the paddle — bubble floats above/middle area
+  const paddle = state.paddles[side];
+  const bob = Math.sin(frameT * 0.01) * 1;
+  let bx: number;
+  if (side === "left") {
+    bx = Math.max(2, PADDLE_W + 4);
+  } else {
+    bx = Math.min(FIELD_W - w - 2, FIELD_W - PADDLE_W - 4 - w);
+  }
+  const py = paddle.y + paddle.height / 2;
+  let by = Math.round(py - h / 2 - 14 + bob);
+  if (by < 32) by = 32;
+  if (by > FIELD_H - h - 4) by = FIELD_H - h - 4;
+
+  // Background fill (dark) + colored border
+  ctx.fillStyle = "rgba(0,0,0,0.85)";
+  ctx.fillRect(bx, by, w, h);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  ctx.strokeRect(bx + 0.5, by + 0.5, w - 1, h - 1);
+  ctx.shadowBlur = 0;
+
+  // Tail pointing toward paddle
+  ctx.fillStyle = "rgba(0,0,0,0.85)";
+  if (side === "left") {
+    ctx.fillRect(bx - 2, by + h / 2 - 1, 2, 2);
+    ctx.fillRect(bx - 4, by + h / 2 - 1, 2, 1);
+  } else {
+    ctx.fillRect(bx + w, by + h / 2 - 1, 2, 2);
+    ctx.fillRect(bx + w + 2, by + h / 2 - 1, 2, 1);
+  }
+
+  // Text
+  ctx.fillStyle = color;
+  ctx.shadowBlur = 0;
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], bx + padX, by + padY + i * lineH);
+  }
+  ctx.restore();
 }
 
 function updateParticles(particles: Particle[], dt: number) {
