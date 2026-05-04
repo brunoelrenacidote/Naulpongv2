@@ -8,7 +8,7 @@ import {
   FIELD_W,
   GameState,
   PADDLE_W,
-  POWER_EMOJIS,
+  POWER_GLYPHS,
   POWER_LABELS,
   Side,
 } from "@/lib/game-types";
@@ -313,9 +313,9 @@ function drawFrame(
   } else if (state.phase === "FINISHED" && state.winner) {
     const ch = CHARACTERS[state.characters[state.winner]];
     const winnerNick = state.nicks?.[state.winner] || ch.name;
-    drawCenterText(ctx, W, H, "GAME OVER", "#ff5cd1", 36);
-    drawSubText(ctx, W, H, `GANA ${winnerNick.toUpperCase()}`, ch.color);
     drawWinnerMascot(ctx, W, H, state, frameT);
+    drawCenterText(ctx, W, H, "GAME OVER", "#ff5cd1", 28, 0.62);
+    drawSubText(ctx, W, H, `GANA ${winnerNick.toUpperCase()}`, ch.color, 0.62, 30);
   }
 
   // Recent power activation banner
@@ -333,7 +333,7 @@ function drawFrame(
     ctx.shadowBlur = 24;
     ctx.fillStyle = colorForPower(state.lastEvent.power);
     ctx.fillText(
-      `${POWER_EMOJIS[state.lastEvent.power]}  ${POWER_LABELS[state.lastEvent.power]}  ${POWER_EMOJIS[state.lastEvent.power]}`,
+      POWER_LABELS[state.lastEvent.power],
       W / 2,
       H - 36,
     );
@@ -682,7 +682,7 @@ function drawPowerOrb(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  power: keyof typeof POWER_EMOJIS,
+  power: keyof typeof POWER_GLYPHS,
   frameT: number,
 ) {
   const color = colorForPower(power);
@@ -714,12 +714,12 @@ function drawPowerOrb(
   ctx.arc(x, y, 3.4, 0, Math.PI * 2);
   ctx.fill();
 
-  // emoji label on top
-  ctx.fillStyle = "#fff";
-  ctx.font = "bold 6px monospace";
+  // single-letter glyph on top — pixelated and crisp
+  ctx.fillStyle = "#0a0a14";
+  ctx.font = 'bold 6px "Press Start 2P", monospace';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(POWER_EMOJIS[power], x, y);
+  ctx.fillText(POWER_GLYPHS[power], x, y + 0.5);
 }
 
 function drawPaddle(
@@ -849,6 +849,7 @@ function drawCenterText(
   text: string,
   color: string,
   size = 28,
+  yFactor = 0.5,
 ) {
   ctx.save();
   ctx.font = `${size}px "Press Start 2P", monospace`;
@@ -857,7 +858,7 @@ function drawCenterText(
   ctx.shadowColor = color;
   ctx.shadowBlur = 24;
   ctx.fillStyle = color;
-  ctx.fillText(text, W / 2, H / 2 - 4);
+  ctx.fillText(text, W / 2, H * yFactor);
   ctx.restore();
 }
 
@@ -867,6 +868,8 @@ function drawSubText(
   H: number,
   text: string,
   color: string,
+  yFactor = 0.5,
+  offset = 36,
 ) {
   ctx.save();
   ctx.font = '12px "Press Start 2P", monospace';
@@ -875,7 +878,7 @@ function drawSubText(
   ctx.shadowColor = color;
   ctx.shadowBlur = 12;
   ctx.fillStyle = color;
-  ctx.fillText(text, W / 2, H / 2 + 36);
+  ctx.fillText(text, W / 2, H * yFactor + offset);
   ctx.restore();
 }
 
@@ -988,14 +991,14 @@ function drawWinnerMascot(
   const winner = state.winner;
   if (!winner) return;
   const ch = CHARACTERS[state.characters[winner]];
-  const bob = Math.sin(frameT * 0.008) * 8;
+  const bob = Math.sin(frameT * 0.008) * 6;
   drawSpriteWithFrame(
     ctx,
     state.characters[winner],
     "happy",
     W / 2,
-    H / 2 - 36 + bob,
-    6,
+    H * 0.28 + bob,
+    5,
     ch.color,
   );
 }

@@ -57,6 +57,19 @@ export const POWER_EMOJIS: Record<PowerId, string> = {
   invert: "🔄",
 };
 
+// Single-letter pixel-friendly codes used inside the canvas
+// (emojis don't render cleanly in the 320×180 pixel-art viewport).
+export const POWER_GLYPHS: Record<PowerId, string> = {
+  slowmo: "S",
+  paddleXL: "X",
+  paddleMini: "M",
+  turbo: "T",
+  shield: "D",
+  freeze: "F",
+  curve: "C",
+  invert: "I",
+};
+
 export type CharacterId = "hijo-fiesta" | "clavel";
 
 export const CHARACTERS: Record<

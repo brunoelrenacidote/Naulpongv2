@@ -230,18 +230,18 @@ export class GameRoom implements DurableObject {
       targetCy = FIELD_H / 2;
     }
 
-    // Difficulty modifiers
+    // Difficulty modifiers — speedScale relative to a human's max paddle speed
     let aimNoise = 0;
     let speedScale = 1;
     if (this.botDifficulty === "easy") {
-      aimNoise = 32;
+      aimNoise = 26;
       speedScale = 0.55;
     } else if (this.botDifficulty === "medium") {
-      aimNoise = 14;
-      speedScale = 0.8;
+      aimNoise = 10;
+      speedScale = 0.78;
     } else if (this.botDifficulty === "hard") {
-      aimNoise = 4;
-      speedScale = 1;
+      aimNoise = 3;
+      speedScale = 0.95;
     }
     // Wobble so the bot doesn't feel robotic
     targetCy +=
@@ -253,11 +253,11 @@ export class GameRoom implements DurableObject {
     if (targetY < 0) targetY = 0;
     if (targetY > FIELD_H - paddle.height) targetY = FIELD_H - paddle.height;
 
-    // Approach with limited speed by lerping the targetY we send.
-    // The game loop already enforces PADDLE_DRAG_SPEED; we slow the bot by
-    // not letting its requested target jump faster than its skill allows.
+    // Limit the bot's per-tick target progress relative to a human's drag
+    // speed (720 px/s). The game loop already enforces paddle physics; we
+    // slow the bot by not letting its target jump faster than its skill.
     const cur = paddle.y;
-    const maxStep = 240 * speedScale * (TICK_MS / 1000);
+    const maxStep = 720 * speedScale * (TICK_MS / 1000);
     let smoothed: number;
     if (Math.abs(targetY - cur) <= maxStep) smoothed = targetY;
     else smoothed = cur + Math.sign(targetY - cur) * maxStep;

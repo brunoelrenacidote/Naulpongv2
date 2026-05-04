@@ -4,8 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import PartySocket from "partysocket";
 import GameCanvas from "@/components/GameCanvas";
+import CharacterPreview from "@/components/CharacterPreview";
 import {
   CHARACTERS,
+  CharacterId,
   FIELD_H,
   GameState,
   POWER_EMOJIS,
@@ -322,31 +324,53 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
     }
   })();
 
+  const modeLabel: string = (() => {
+    if (mode === "bot") {
+      const d =
+        botDifficulty === "easy"
+          ? "FÁCIL"
+          : botDifficulty === "hard"
+            ? "DIFÍCIL"
+            : "MEDIO";
+      return `BOT · ${d}`;
+    }
+    if (mode === "quick") return "PARTIDA RÁPIDA";
+    return "SALA PRIVADA";
+  })();
+
   return (
-    <div className="flex w-full flex-col items-center gap-2">
-      <div className="flex w-full items-center justify-between gap-2 px-1">
+    <div className="flex w-full flex-col items-center gap-3">
+      <div className="flex w-full max-w-[960px] items-center justify-between gap-3 px-1">
         <Link
           href="/"
-          className="font-press text-[10px] text-white/60 hover:text-white"
+          className="font-press text-[10px] tracking-widest text-white/50 hover:text-white"
         >
           ← MENÚ
         </Link>
-        <div className="font-press flex items-center gap-2 text-[10px] text-white/70">
-          <span className="opacity-60">SALA</span>
-          <button
-            onClick={copyLink}
-            className="glow-cyan rounded border border-[var(--neon-cyan)] px-2 py-1 hover:bg-[var(--neon-cyan)]/10"
-          >
-            {copied ? "¡COPIADO!" : code}
-          </button>
+        <div className="font-press flex items-center gap-3 text-[9px] tracking-widest text-white/60 sm:text-[10px]">
+          <span className="rounded border border-white/15 bg-black/40 px-2 py-1 text-white/60">
+            {modeLabel}
+          </span>
+          {mode !== "bot" && (
+            <button
+              onClick={copyLink}
+              className="glow-cyan rounded border border-[var(--neon-cyan)]/60 px-2 py-1 hover:bg-[var(--neon-cyan)]/10"
+            >
+              {copied ? "¡COPIADO!" : `SALA ${code}`}
+            </button>
+          )}
         </div>
-        <span className="font-press text-[10px] text-white/40">
+        <span
+          className={`font-press text-[10px] tracking-widest ${
+            connected ? "text-[var(--neon-green)]" : "text-white/40"
+          }`}
+        >
           {connected ? "● ONLINE" : "○ OFFLINE"}
         </span>
       </div>
 
       {/* HUD */}
-      <div className="flex w-full max-w-[960px] items-center justify-between gap-2 rounded border border-white/10 bg-black/40 p-2">
+      <div className="flex w-full max-w-[960px] items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 backdrop-blur-sm">
         <PlayerCard
           ch={leftCh}
           nick={state?.nicks?.left ?? ""}
@@ -354,11 +378,13 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
           you={you === "left"}
           paddleEffects={state ? activeEffects(state, "left") : []}
         />
-        <div className="font-press flex flex-col items-center text-center text-[10px] text-white/70">
-          <div className="text-xs sm:text-sm">{phaseLabel}</div>
-          {mode === "quick" && state?.phase === "WAITING" && (
-            <div className="text-[8px] opacity-70">PARTIDA RÁPIDA</div>
-          )}
+        <div className="font-press flex flex-col items-center justify-center px-2 text-center">
+          <div className="text-[9px] tracking-widest text-white/40 sm:text-[10px]">
+            {phaseLabel}
+          </div>
+          <div className="font-vt text-[20px] leading-none text-white/60 sm:text-2xl">
+            VS
+          </div>
         </div>
         <PlayerCard
           ch={rightCh}
@@ -380,22 +406,25 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
       </div>
 
       {/* Bottom panel */}
-      <div className="font-press flex w-full max-w-[960px] flex-wrap items-center justify-center gap-3 rounded border border-white/10 bg-black/40 p-2 text-center text-[10px] text-white/70">
-        {state?.phase === "WAITING" && (
+      <div className="font-press flex w-full max-w-[960px] flex-wrap items-center justify-center gap-3 rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-center text-[10px] tracking-wider text-white/70 backdrop-blur-sm">
+        {state?.phase === "WAITING" && mode !== "bot" && (
           <span>
-            COMPARTÍ EL CÓDIGO <span className="glow-cyan">{code}</span> O EL
-            LINK PARA QUE TU RIVAL ENTRE.
+            COMPARTÍ EL CÓDIGO{" "}
+            <span className="glow-cyan">{code}</span>{" "}
+            PARA QUE ENTRE TU RIVAL.
           </span>
         )}
+        {state?.phase === "WAITING" && mode === "bot" && (
+          <span className="opacity-80">PREPARANDO BOT…</span>
+        )}
         {playing && (
-          <span>
-            <span className="opacity-90">DESLIZÁ</span> arriba/abajo en la
-            cancha &nbsp;·&nbsp; ↑/↓ o W/S en teclado
+          <span className="opacity-80">
+            DESLIZÁ EN LA CANCHA &nbsp;·&nbsp; ↑/↓ O W/S EN TECLADO
           </span>
         )}
         {state?.phase === "FINISHED" && (
           <div className="flex flex-col items-center gap-3">
-            <div>
+            <div className="text-[12px] tracking-widest">
               {state.winner === you
                 ? "¡GANASTE!"
                 : you === "spectator"
@@ -410,10 +439,10 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
                 MENÚ
               </Link>
             </div>
-            {state.rematchVotes && (
-              <div className="text-[8px] opacity-70">
-                {state.rematchVotes.left ? "✓" : "○"} izquierda &nbsp;
-                {state.rematchVotes.right ? "✓" : "○"} derecha
+            {state.rematchVotes && mode !== "bot" && (
+              <div className="text-[8px] tracking-widest opacity-50">
+                {state.rematchVotes.left ? "✓" : "○"} P1 &nbsp;·&nbsp;
+                {state.rematchVotes.right ? "✓" : "○"} P2
               </div>
             )}
           </div>
@@ -461,7 +490,7 @@ function PlayerCard({
   paddleEffects,
   right,
 }: {
-  ch: { id: string; name: string; color: string; emoji: string } | null;
+  ch: { id: CharacterId; name: string; color: string; emoji: string } | null;
   nick: string;
   score: number;
   you: boolean;
@@ -471,44 +500,54 @@ function PlayerCard({
   if (!ch) {
     return (
       <div className="flex flex-1 items-center gap-2">
-        <div className="font-press text-xs text-white/40">...</div>
+        <div className="font-press text-[10px] text-white/40">…</div>
       </div>
     );
   }
-  const display = nick || (you ? "VOS" : "P" + (right ? "2" : "1"));
+  const display = nick || (you ? "VOS" : right ? "P2" : "P1");
   return (
     <div
-      className={`flex flex-1 items-center gap-2 sm:gap-3 ${
+      className={`flex flex-1 items-center gap-3 ${
         right ? "flex-row-reverse text-right" : ""
       }`}
     >
       <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded border-2 sm:h-14 sm:w-14"
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md sm:h-16 sm:w-16"
         style={{
-          borderColor: ch.color,
-          boxShadow: `0 0 10px ${ch.color}`,
-          background: "rgba(0,0,0,0.6)",
-          imageRendering: "pixelated",
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.55))",
+          border: `1px solid ${ch.color}55`,
+          boxShadow: `inset 0 0 12px ${ch.color}22, 0 0 8px ${ch.color}55`,
         }}
       >
-        <span className="text-2xl sm:text-3xl">{ch.emoji}</span>
+        <CharacterPreview id={ch.id} scale={2} glow={ch.color} />
       </div>
-      <div className={`flex flex-col ${right ? "items-end" : "items-start"}`}>
+      <div
+        className={`flex min-w-0 flex-col ${right ? "items-end" : "items-start"}`}
+      >
         <div
-          className="font-press text-[8px] sm:text-[9px]"
+          className="font-press truncate text-[9px] tracking-widest sm:text-[10px]"
           style={{ color: ch.color }}
+          title={display}
         >
           {display}
-          {you ? " (VOS)" : ""}
+          {you ? " · TÚ" : ""}
         </div>
         <div
-          className="font-press text-[7px] opacity-60 sm:text-[8px]"
+          className="font-press mt-0.5 max-w-[140px] truncate text-[7px] tracking-wider opacity-60 sm:max-w-[200px] sm:text-[8px]"
           style={{ color: ch.color }}
+          title={ch.name}
         >
           {ch.name}
         </div>
-        <div className="font-press text-2xl text-white sm:text-3xl">{score}</div>
-        <div className="text-base sm:text-lg">{paddleEffects.join(" ")}</div>
+        <div className="font-press mt-1 text-3xl leading-none text-white sm:text-4xl">
+          {score}
+        </div>
+        {paddleEffects.length > 0 && (
+          <div className="mt-1 text-base sm:text-lg">
+            {paddleEffects.join(" ")}
+          </div>
+        )}
       </div>
     </div>
   );
