@@ -4,7 +4,7 @@ Pong online 1v1 con poderes — hecho con Next.js 14 + Cloudflare Workers (Durab
 
 ## Personajes
 
-🟢 **El que va por su hijo a la fiesta** — el bueno, cara de cansancio paterno
+🟢 **El wey que va por su hijo a las fiestas** — el bueno, cara de cansancio paterno
 🔴 **El Clavel** — el malo, mirada sospechosa
 
 Cada partida asigna aleatoriamente uno a cada lado.

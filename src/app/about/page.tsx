@@ -18,7 +18,7 @@ export default function About() {
         </p>
         <p>
           Cada partida asigna aleatoriamente a los dos personajes de cada lado:{" "}
-          <span className="glow-cyan">El que va por su hijo a la fiesta</span> y{" "}
+          <span className="glow-cyan">El wey que va por su hijo a las fiestas</span> y{" "}
           <span className="glow-pink">El Clavel</span>.
         </p>
       </section>

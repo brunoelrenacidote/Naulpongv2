@@ -24,7 +24,7 @@ const SKIN = "#ffd9b3";
 const DARK = "#1a1a1a";
 const SHADOW = "#7c5a3a";
 
-// === EL QUE VA POR SU HIJO A LA FIESTA ===
+// === EL WEY QUE VA POR SU HIJO A LAS FIESTAS ===
 // Palette codes:
 //   '.' transparent  'C' cap teal  'c' cap white stripe  'D' cap brim shadow
 //   'S' skin         'B' eye bag/shadow                   'K' dark (eye/mustache)

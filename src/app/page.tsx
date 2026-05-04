@@ -24,7 +24,9 @@ export default function Home() {
         <div className="flex flex-col items-center gap-2">
           <CharacterPreview id="hijo-fiesta" scale={4} glow="#5cffc8" />
           <p className="glow-cyan text-[8px] sm:text-[10px]">
-            EL HIJO<br />FIESTA
+            EL WEY DE
+            <br />
+            LAS FIESTAS
           </p>
         </div>
         <div className="font-press flex flex-col items-center text-yellow-300">

@@ -19,7 +19,7 @@ const vt = VT323({
 export const metadata: Metadata = {
   title: "NauLPong — Pong 1v1 con Poderes",
   description:
-    "Pong online 1v1 con power-ups locos. Jugá contra El Clavel o El que va por su hijo a la fiesta.",
+    "Pong online 1v1 con power-ups locos. Jugá contra El Clavel o El wey que va por su hijo a las fiestas.",
 };
 
 export const viewport: Viewport = {

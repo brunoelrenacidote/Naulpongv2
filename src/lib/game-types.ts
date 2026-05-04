@@ -65,7 +65,7 @@ export const CHARACTERS: Record<
 > = {
   "hijo-fiesta": {
     id: "hijo-fiesta",
-    name: "EL QUE VA POR SU HIJO A LA FIESTA",
+    name: "EL WEY QUE VA POR SU HIJO A LAS FIESTAS",
     color: "#5cffc8",
     emoji: "👨‍🦱",
   },
