@@ -1,0 +1,19 @@
+name = "naulpong"
+main = "worker/index.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[durable_objects.bindings]]
+name = "GAME"
+class_name = "GameRoom"
+
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "LobbyRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom", "LobbyRoom"]
+
+[observability]
+enabled = true

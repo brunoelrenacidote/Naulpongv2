@@ -4,22 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:party": "partykit dev",
-    "dev:all": "concurrently -n web,party -c cyan,magenta \"npm run dev\" \"npm run dev:party\"",
+    "dev:worker": "wrangler dev --port 1999",
+    "dev:all": "concurrently -n web,worker -c cyan,magenta \"npm run dev\" \"npm run dev:worker\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "deploy:party": "partykit deploy"
+    "deploy:worker": "wrangler deploy"
   },
   "dependencies": {
     "next": "14.2.35",
-    "partykit": "^0.0.115",
     "partysocket": "^1.1.18",
     "react": "^18",
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260504.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -28,6 +28,7 @@
     "eslint-config-next": "14.2.35",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.87.0"
   }
 }

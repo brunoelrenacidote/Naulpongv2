@@ -1,6 +1,6 @@
 # NauLPong 🏓⚡
 
-Pong online 1v1 con poderes — hecho con Next.js 14 + PartyKit, deployable a Vercel.
+Pong online 1v1 con poderes — hecho con Next.js 14 + Cloudflare Workers (Durable Objects), deployable a Vercel + Cloudflare.
 
 ## Personajes
 
@@ -32,14 +32,15 @@ Cada partida asigna aleatoriamente uno a cada lado.
 
 - Primer jugador en llegar a **7 puntos** gana.
 - Los orbes de poder aparecen aleatoriamente en la cancha. Cuando la pelota toca un orbe, el último jugador que la tocó se queda con el efecto.
-- El servidor (PartyKit) corre la simulación a 30Hz — **server-authoritative, anti-trampa**.
+- El servidor (Cloudflare Worker + Durable Objects) corre la simulación a 30Hz — **server-authoritative, anti-trampa**.
 
 ## Arquitectura
 
 - **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind. Renderizado en HTML5 Canvas con scaling pixelado.
-- **Backend realtime**: PartyKit con dos parties:
-  - `game` (default): un room por código de sala, mantiene el game state y broadcastea a 30Hz.
-  - `lobby`: un único room global `global` con cola FIFO de matchmaking.
+- **Backend realtime**: Cloudflare Worker con dos Durable Objects:
+  - `GameRoom`: una instancia por código de sala, mantiene el game state y broadcastea a 30Hz.
+  - `LobbyRoom`: una única instancia global `global` con cola FIFO de matchmaking.
+- **Cliente**: usa la librería `partysocket` que abre un WebSocket a `wss://<host>/parties/<party>/<roomId>`. Esa URL pattern la resuelve el Worker enrutando al Durable Object correcto.
 - **Compartido**: `src/lib/game-types.ts` y `src/lib/game-logic.ts` los importan tanto cliente como servidor.
 
 ```
@@ -56,13 +57,14 @@ src/
     GameCanvas.tsx           # Render del campo en Canvas
   lib/
     game-types.ts            # Tipos compartidos client/server
-    game-logic.ts            # Tick / física / power-ups (servidor + posible predicción cliente)
-    party-host.ts            # Resuelve la URL de PartyKit
+    game-logic.ts            # Tick / física / power-ups
+    party-host.ts            # Resuelve la URL del Worker
     sounds.ts                # SFX chiptune con Web Audio API
-party/
-  game.ts                    # PartyKit room por partida
-  lobby.ts                   # PartyKit room de matchmaking
-partykit.json
+worker/
+  index.ts                   # Router del Worker (CORS + dispatch a DOs)
+  game-room.ts               # Durable Object: GameRoom (partida)
+  lobby-room.ts              # Durable Object: LobbyRoom (matchmaking)
+wrangler.toml
 ```
 
 ## Desarrollo
@@ -71,12 +73,12 @@ Necesitás Node 20+.
 
 ```bash
 npm install
-# Corre Next.js (web) y PartyKit (server) juntos:
+# Corre Next.js (web) y Wrangler (worker) juntos:
 npm run dev:all
 ```
 
 - Web: http://localhost:3000
-- PartyKit: http://localhost:1999
+- Worker: http://localhost:1999
 
 Variables de entorno (opcional para desarrollo):
 
@@ -84,21 +86,24 @@ Variables de entorno (opcional para desarrollo):
 NEXT_PUBLIC_PARTYKIT_HOST=127.0.0.1:1999
 ```
 
+(El nombre `NEXT_PUBLIC_PARTYKIT_HOST` quedó del setup original; ahora apunta al Worker de Cloudflare en producción.)
+
 ## Deploy
 
-### PartyKit (servidor)
+### Cloudflare Workers (servidor)
 
 ```bash
-npx partykit deploy
+npx wrangler login   # primera vez, abre el navegador
+npm run deploy:worker
 ```
 
-Te va a pedir login con GitHub la primera vez. Después te imprime tu host (algo como `naulpong.tu-usuario.partykit.dev`).
+Te imprime tu host, algo como `naulpong.<tu-subdominio>.workers.dev`. Si es la primera vez también te pide elegir un subdominio (puede ser tu cuenta).
 
 ### Vercel (frontend)
 
 1. Conectá este repo a Vercel.
 2. En **Settings → Environment Variables**, agregá:
-   - `NEXT_PUBLIC_PARTYKIT_HOST` = el host que te dio PartyKit (sin `https://`)
+   - `NEXT_PUBLIC_PARTYKIT_HOST` = el host del Worker (sin `https://`, ej. `naulpong.tu-subdominio.workers.dev`)
 3. Deploy.
 
 ## Sprites

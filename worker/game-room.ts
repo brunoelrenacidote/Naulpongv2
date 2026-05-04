@@ -1,4 +1,5 @@
-import type * as Party from "partykit/server";
+/// <reference types="@cloudflare/workers-types" />
+
 import {
   ClientMessage,
   GameState,
@@ -14,34 +15,51 @@ import {
 } from "../src/lib/game-logic";
 
 interface PlayerSlot {
-  connId: string;
+  id: string;
+  ws: WebSocket;
   side: Side;
   input: { up: boolean; down: boolean };
 }
 
-export default class GameServer implements Party.Server {
+export class GameRoom implements DurableObject {
   state: GameState;
-  players: Map<string, PlayerSlot> = new Map();
+  players = new Map<string, PlayerSlot>();
+  spectators = new Map<string, WebSocket>();
   loopInterval: ReturnType<typeof setInterval> | null = null;
-  lastTick: number = 0;
+  lastTick = 0;
 
-  constructor(readonly room: Party.Room) {
+  constructor(_ctx: DurableObjectState, _env: unknown) {
     this.state = createInitialState(Date.now());
   }
 
-  onConnect(conn: Party.Connection) {
-    // Assign side
+  async fetch(request: Request): Promise<Response> {
+    const upgrade = request.headers.get("Upgrade");
+    if (upgrade !== "websocket") {
+      return new Response("Expected WebSocket", { status: 426 });
+    }
+    const pair = new WebSocketPair();
+    const [client, server] = [pair[0], pair[1]];
+    this.handleSession(server);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  handleSession(ws: WebSocket) {
+    ws.accept();
+    const id = crypto.randomUUID();
+
     const sides: Side[] = ["left", "right"];
     const taken = new Set(Array.from(this.players.values()).map((p) => p.side));
     const free = sides.find((s) => !taken.has(s));
+
     if (free) {
       const slot: PlayerSlot = {
-        connId: conn.id,
+        id,
+        ws,
         side: free,
         input: { up: false, down: false },
       };
-      this.players.set(conn.id, slot);
-      this.send(conn, { type: "assign", you: free, playerId: conn.id });
+      this.players.set(id, slot);
+      this.send(ws, { type: "assign", you: free, playerId: id });
       this.broadcastState();
 
       if (this.players.size === 2 && this.state.phase === "WAITING") {
@@ -49,33 +67,33 @@ export default class GameServer implements Party.Server {
         this.startLoop();
       }
     } else {
-      // spectator
-      this.send(conn, { type: "assign", you: "left", playerId: conn.id });
+      this.spectators.set(id, ws);
+      this.send(ws, { type: "assign", you: "left", playerId: id });
       this.broadcastState();
     }
+
+    ws.addEventListener("message", (event) => {
+      this.handleMessage(id, ws, event.data);
+    });
+
+    const cleanup = () => this.handleClose(id);
+    ws.addEventListener("close", cleanup);
+    ws.addEventListener("error", cleanup);
   }
 
-  onClose(conn: Party.Connection) {
-    const slot = this.players.get(conn.id);
-    if (!slot) return;
-    this.players.delete(conn.id);
-    if (this.state.phase !== "WAITING" && this.state.phase !== "FINISHED") {
-      // back to waiting
-      this.state.phase = "WAITING";
-      this.stopLoop();
-    }
-    this.broadcastState();
-  }
+  handleMessage(id: string, ws: WebSocket, raw: string | ArrayBuffer) {
+    let data: string;
+    if (typeof raw === "string") data = raw;
+    else data = new TextDecoder().decode(raw);
 
-  onMessage(message: string, sender: Party.Connection) {
     let msg: ClientMessage;
     try {
-      msg = JSON.parse(message) as ClientMessage;
+      msg = JSON.parse(data) as ClientMessage;
     } catch {
       return;
     }
 
-    const slot = this.players.get(sender.id);
+    const slot = this.players.get(id);
     if (!slot) return;
 
     if (msg.type === "input") {
@@ -89,8 +107,19 @@ export default class GameServer implements Party.Server {
       }
       this.broadcastState();
     } else if (msg.type === "ping") {
-      this.send(sender, { type: "pong", t: msg.t });
+      this.send(ws, { type: "pong", t: msg.t });
     }
+  }
+
+  handleClose(id: string) {
+    if (this.players.delete(id)) {
+      if (this.state.phase !== "WAITING" && this.state.phase !== "FINISHED") {
+        this.state.phase = "WAITING";
+        this.stopLoop();
+      }
+      this.broadcastState();
+    }
+    this.spectators.delete(id);
   }
 
   startLoop() {
@@ -129,16 +158,19 @@ export default class GameServer implements Party.Server {
   }
 
   broadcastState() {
-    Array.from(this.room.getConnections()).forEach((conn) => {
-      const slot = this.players.get(conn.id);
-      const you: Side | "spectator" = slot ? slot.side : "spectator";
-      this.send(conn, { type: "state", state: this.state, you });
+    Array.from(this.players.values()).forEach((p) => {
+      this.send(p.ws, { type: "state", state: this.state, you: p.side });
+    });
+    Array.from(this.spectators.values()).forEach((ws) => {
+      this.send(ws, { type: "state", state: this.state, you: "spectator" });
     });
   }
 
-  send(conn: Party.Connection, msg: ServerMessage) {
-    conn.send(JSON.stringify(msg));
+  send(ws: WebSocket, msg: ServerMessage) {
+    try {
+      ws.send(JSON.stringify(msg));
+    } catch {
+      // ignore broken pipes
+    }
   }
 }
-
-GameServer satisfies Party.Worker;
