@@ -1,0 +1,9 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "naulpong",
+  "main": "party/game.ts",
+  "parties": {
+    "lobby": "party/lobby.ts"
+  },
+  "compatibilityDate": "2024-09-25"
+}
