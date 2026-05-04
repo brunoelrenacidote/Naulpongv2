@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Press_Start_2P, VT323 } from "next/font/google";
 import "./globals.css";
+import MusicToggle from "@/components/MusicToggle";
 
 const press = Press_Start_2P({
   weight: "400",
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body className={`${press.variable} ${vt.variable} crt-screen min-h-screen`}>
         <div className="scanlines" aria-hidden />
         <div className="vignette" aria-hidden />
+        <MusicToggle />
         {children}
       </body>
     </html>
