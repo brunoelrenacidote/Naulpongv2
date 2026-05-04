@@ -44,11 +44,17 @@ export default function Home() {
 
       <HomeActions />
 
-      <footer className="font-vt mt-auto flex flex-col items-center gap-1 pt-12 text-center text-sm text-white/40">
+      <footer className="font-vt mt-auto flex flex-col items-center gap-2 pt-12 text-center text-sm text-white/40">
+        <div className="flex gap-4">
+          <Link href="/perfil" className="underline hover:text-white/80">
+            Mi perfil
+          </Link>
+          <span className="text-white/20">·</span>
+          <Link href="/about" className="underline hover:text-white/80">
+            Cómo se juega
+          </Link>
+        </div>
         <p>© NauLPong</p>
-        <Link href="/about" className="underline hover:text-white/80">
-          Cómo se juega
-        </Link>
       </footer>
     </main>
   );

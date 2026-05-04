@@ -5,6 +5,7 @@ import Link from "next/link";
 import PartySocket from "partysocket";
 import GameCanvas from "@/components/GameCanvas";
 import CharacterPreview from "@/components/CharacterPreview";
+import AchievementToast from "@/components/AchievementToast";
 import {
   CHARACTERS,
   CharacterId,
@@ -28,6 +29,7 @@ import {
   sfxWin,
   unlockAudio,
 } from "@/lib/sounds";
+import { Achievement, recordMatch } from "@/lib/stats";
 
 interface Props {
   code: string;
@@ -52,6 +54,13 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
   const [you, setYou] = useState<Side | "spectator">("spectator");
   const [connected, setConnected] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<
+    Achievement[]
+  >([]);
+  const matchStartRef = useRef<number | null>(null);
+  const matchEndedRef = useRef<boolean>(false);
+  const powerUpsTakenRef = useRef<number>(0);
+  const powerEventRef = useRef<number>(0);
   const wsRef = useRef<PartySocket | null>(null);
   const inputRef = useRef<InputState>({
     up: false,
@@ -95,6 +104,7 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
           setState(msg.state);
           setYou(msg.you);
           handleSounds(msg.state);
+          handleStatsTracking(msg.state, msg.you);
         } else if (msg.type === "assign") {
           setYou(msg.you);
         }
@@ -286,6 +296,56 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
     }
   }
 
+  function handleStatsTracking(s: GameState, side: Side | "spectator") {
+    // Reset counters on a new match (whenever a fresh COUNTDOWN starts).
+    if (s.phase === "COUNTDOWN" && matchEndedRef.current) {
+      matchEndedRef.current = false;
+      matchStartRef.current = null;
+      powerUpsTakenRef.current = 0;
+    }
+    // Lock in the start time when play actually begins.
+    if (s.phase === "PLAYING" && matchStartRef.current == null) {
+      matchStartRef.current = Date.now();
+    }
+    // Count power-ups picked up on our side.
+    if (
+      s.lastEvent?.kind === "power" &&
+      s.lastEvent.t !== powerEventRef.current &&
+      side !== "spectator" &&
+      s.lastEvent.side === side
+    ) {
+      powerEventRef.current = s.lastEvent.t;
+      powerUpsTakenRef.current += 1;
+    }
+    // Record once when the match finishes.
+    if (
+      s.phase === "FINISHED" &&
+      !matchEndedRef.current &&
+      side !== "spectator" &&
+      s.winner != null
+    ) {
+      matchEndedRef.current = true;
+      const start = matchStartRef.current ?? Date.now();
+      const durationMs = Math.max(0, Date.now() - start);
+      const won = s.winner === side;
+      const goalsFor = s.scores[side];
+      const goalsAgainst =
+        s.scores[side === "left" ? "right" : "left"];
+      const result = recordMatch({
+        won,
+        goalsFor,
+        goalsAgainst,
+        durationMs,
+        powerUpsTaken: powerUpsTakenRef.current,
+        vsBot: mode === "bot" ? (botDifficulty ?? "medium") : null,
+        vsHuman: mode !== "bot",
+      });
+      if (result.unlocked.length > 0) {
+        setUnlockedAchievements((prev) => [...prev, ...result.unlocked]);
+      }
+    }
+  }
+
   function copyLink() {
     const url = `${window.location.origin}/play/${code}`;
     navigator.clipboard?.writeText(url).catch(() => {
@@ -340,6 +400,12 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
 
   return (
     <div className="flex w-full flex-col items-center gap-3">
+      <AchievementToast
+        achievements={unlockedAchievements}
+        onDone={(id) =>
+          setUnlockedAchievements((prev) => prev.filter((a) => a.id !== id))
+        }
+      />
       <div className="flex w-full max-w-[960px] items-center justify-between gap-3 px-1">
         <Link
           href="/"

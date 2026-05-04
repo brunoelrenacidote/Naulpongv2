@@ -280,3 +280,17 @@ body.crt-screen {
   z-index: 51;
   animation: scan-jump 7s linear infinite;
 }
+
+@keyframes achievement-slide {
+  0% { transform: translateY(-16px); opacity: 0; }
+  10% { transform: translateY(0); opacity: 1; }
+  85% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-12px); opacity: 0; }
+}
+
+.achievement-toast {
+  box-shadow:
+    0 0 16px rgba(255, 217, 92, 0.45),
+    inset 0 0 12px rgba(255, 217, 92, 0.15);
+  animation: achievement-slide 4.5s ease-out forwards;
+}
