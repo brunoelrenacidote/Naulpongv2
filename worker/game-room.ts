@@ -18,7 +18,20 @@ interface PlayerSlot {
   id: string;
   ws: WebSocket;
   side: Side;
-  input: { up: boolean; down: boolean };
+  input: { up: boolean; down: boolean; targetY: number | null };
+  nick: string;
+}
+
+function sanitizeNick(nick: unknown): string {
+  if (typeof nick !== "string") return "";
+  // strip control chars, normalize whitespace, cap length, uppercase for arcade vibe
+  const cleaned = nick
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 12)
+    .toUpperCase();
+  return cleaned;
 }
 
 export class GameRoom implements DurableObject {
@@ -56,7 +69,8 @@ export class GameRoom implements DurableObject {
         id,
         ws,
         side: free,
-        input: { up: false, down: false },
+        input: { up: false, down: false, targetY: null },
+        nick: "",
       };
       this.players.set(id, slot);
       this.send(ws, { type: "assign", you: free, playerId: id });
@@ -97,7 +111,18 @@ export class GameRoom implements DurableObject {
     if (!slot) return;
 
     if (msg.type === "input") {
-      slot.input = { up: !!msg.up, down: !!msg.down };
+      slot.input = {
+        up: !!msg.up,
+        down: !!msg.down,
+        targetY:
+          typeof msg.targetY === "number" && Number.isFinite(msg.targetY)
+            ? msg.targetY
+            : null,
+      };
+    } else if (msg.type === "nick") {
+      slot.nick = sanitizeNick(msg.nick);
+      this.state.nicks[slot.side] = slot.nick;
+      this.broadcastState();
     } else if (msg.type === "rematch") {
       if (this.state.phase !== "FINISHED") return;
       this.state.rematchVotes[slot.side] = true;
@@ -141,8 +166,8 @@ export class GameRoom implements DurableObject {
     this.lastTick = now;
 
     const inputs: Inputs = {
-      left: { up: false, down: false },
-      right: { up: false, down: false },
+      left: { up: false, down: false, targetY: null },
+      right: { up: false, down: false, targetY: null },
     };
     Array.from(this.players.values()).forEach((p) => {
       if (p.side === "left") inputs.left = p.input;

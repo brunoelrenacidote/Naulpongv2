@@ -78,9 +78,25 @@ function drawFrame(
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, W, H);
 
-  // Grid background
+  // Background draw (in field-space)
   ctx.save();
   ctx.scale(DRAW_SCALE, DRAW_SCALE);
+
+  // Side bands hinting players' colors (super faint)
+  if (state) {
+    const leftCh = CHARACTERS[state.characters.left];
+    const rightCh = CHARACTERS[state.characters.right];
+    const grdL = ctx.createLinearGradient(0, 0, FIELD_W / 2, 0);
+    grdL.addColorStop(0, hexToRgba(leftCh.color, 0.07));
+    grdL.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = grdL;
+    ctx.fillRect(0, 0, FIELD_W / 2, FIELD_H);
+    const grdR = ctx.createLinearGradient(FIELD_W / 2, 0, FIELD_W, 0);
+    grdR.addColorStop(0, "rgba(0,0,0,0)");
+    grdR.addColorStop(1, hexToRgba(rightCh.color, 0.07));
+    ctx.fillStyle = grdR;
+    ctx.fillRect(FIELD_W / 2, 0, FIELD_W / 2, FIELD_H);
+  }
 
   // Center dashed line
   ctx.fillStyle = "rgba(92,255,224,0.55)";
@@ -88,17 +104,17 @@ function drawFrame(
     ctx.fillRect(FIELD_W / 2 - 1, y, 2, 4);
   }
 
-  // Subtle grid
-  ctx.fillStyle = "rgba(92,255,224,0.08)";
-  for (let x = 16; x < FIELD_W; x += 32) {
-    ctx.fillRect(x, 0, 1, FIELD_H);
-  }
-  for (let y = 16; y < FIELD_H; y += 32) {
-    ctx.fillRect(0, y, FIELD_W, 1);
+  // Subtle grid (dot-grid for blocky retro feel)
+  ctx.fillStyle = "rgba(92,255,224,0.10)";
+  for (let x = 8; x < FIELD_W; x += 16) {
+    for (let y = 8; y < FIELD_H; y += 16) {
+      ctx.fillRect(x, y, 1, 1);
+    }
   }
 
   if (!state) {
     ctx.restore();
+    drawScanlines(ctx, W, H);
     drawCenterText(ctx, W, H, "CONECTANDO...", "#5cffe0");
     return;
   }
@@ -135,14 +151,30 @@ function drawFrame(
   drawBall(ctx, state.ball.x, state.ball.y, state.ball.size);
   for (const b of state.extraBalls) drawBall(ctx, b.x, b.y, b.size);
 
-  // Score
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.font = 'bold 18px "Press Start 2P", monospace';
+  // Score (chunky retro)
+  drawScore(ctx, state.scores.left, FIELD_W / 2 - 28, 16, "#5cffe0");
+  drawScore(ctx, state.scores.right, FIELD_W / 2 + 28, 16, "#ff5cd1");
+
+  // Nicks under score
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.font = '5px "Press Start 2P", monospace';
   ctx.textAlign = "center";
-  ctx.fillText(`${state.scores.left}`, FIELD_W / 2 - 28, 22);
-  ctx.fillText(`${state.scores.right}`, FIELD_W / 2 + 28, 22);
+  ctx.textBaseline = "top";
+  ctx.fillText(
+    truncate(state.nicks?.left || "P1", 8),
+    FIELD_W / 2 - 28,
+    24,
+  );
+  ctx.fillText(
+    truncate(state.nicks?.right || "P2", 8),
+    FIELD_W / 2 + 28,
+    24,
+  );
 
   ctx.restore();
+
+  // Scanlines + vignette overlay (in screen space)
+  drawScanlines(ctx, W, H);
 
   // Phase overlays in screen-pixel space
   if (state.phase === "WAITING") {
@@ -155,11 +187,13 @@ function drawFrame(
     const scorer = state.lastEvent.side ?? "left";
     const ch = CHARACTERS[state.characters[scorer]];
     drawCenterText(ctx, W, H, "¡GOL!", "#ffd95c", 48);
-    drawSubText(ctx, W, H, ch.name, ch.color);
+    const scorerNick = state.nicks?.[scorer] || ch.name;
+    drawSubText(ctx, W, H, scorerNick.toUpperCase(), ch.color);
   } else if (state.phase === "FINISHED" && state.winner) {
     const ch = CHARACTERS[state.characters[state.winner]];
+    const winnerNick = state.nicks?.[state.winner] || ch.name;
     drawCenterText(ctx, W, H, "GAME OVER", "#ff5cd1", 36);
-    drawSubText(ctx, W, H, `GANA ${ch.name}`, ch.color);
+    drawSubText(ctx, W, H, `GANA ${winnerNick.toUpperCase()}`, ch.color);
   }
 
   // Recent power activation flash
@@ -171,7 +205,6 @@ function drawFrame(
     const fade = 1 - (state.now - state.lastEvent.t) / 1500;
     ctx.save();
     ctx.globalAlpha = fade;
-    ctx.fillStyle = "#fff";
     ctx.font = 'bold 18px "Press Start 2P", monospace';
     ctx.textAlign = "center";
     ctx.shadowColor = colorForPower(state.lastEvent.power);
@@ -204,6 +237,12 @@ function drawPaddle(
   ctx.shadowBlur = 10;
   ctx.fillStyle = color;
   ctx.fillRect(x, p.y, PADDLE_W, p.height);
+  // inner highlight (lighter shade)
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  ctx.fillRect(x, p.y, PADDLE_W, 2);
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillRect(x, p.y + p.height - 2, PADDLE_W, 2);
   ctx.restore();
 
   // shield indicator
@@ -230,17 +269,13 @@ function drawPaddle(
     ctx.restore();
   }
 
-  // "YOU" indicator
+  // "VOS" indicator (your paddle)
   if (isYou) {
     ctx.save();
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = color;
     ctx.font = '5px "Press Start 2P", monospace';
     ctx.textAlign = "center";
-    ctx.fillText(
-      "VOS",
-      x + PADDLE_W / 2,
-      side === "left" ? p.y - 4 : p.y - 4,
-    );
+    ctx.fillText("▼", x + PADDLE_W / 2, p.y - 2);
     ctx.restore();
   }
 }
@@ -252,10 +287,49 @@ function drawBall(
   size: number,
 ) {
   ctx.save();
+  // outer glow
   ctx.shadowColor = "#fff";
-  ctx.shadowBlur = 8;
+  ctx.shadowBlur = 10;
   ctx.fillStyle = "#fff";
   ctx.fillRect(x, y, size, size);
+  // pixel highlight
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.fillRect(x, y, 1, 1);
+  ctx.restore();
+}
+
+// Chunky pixel score using 5x7 retro digits
+function drawScore(
+  ctx: CanvasRenderingContext2D,
+  n: number,
+  cx: number,
+  cy: number,
+  color: string,
+) {
+  ctx.save();
+  ctx.font = 'bold 14px "Press Start 2P", monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = color;
+  ctx.fillText(String(n), cx, cy);
+  ctx.restore();
+}
+
+function drawScanlines(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+) {
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#000";
+  // horizontal scanlines every 2 device pixels
+  for (let y = 0; y < H; y += 3) {
+    ctx.fillRect(0, y, W, 1);
+  }
   ctx.restore();
 }
 
@@ -317,4 +391,18 @@ function colorForPower(p: string): string {
     default:
       return "#fff";
   }
+}
+
+function truncate(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n) : s;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.replace("#", ""));
+  if (!m) return `rgba(255,255,255,${alpha})`;
+  const v = parseInt(m[1], 16);
+  const r = (v >> 16) & 0xff;
+  const g = (v >> 8) & 0xff;
+  const b = v & 0xff;
+  return `rgba(${r},${g},${b},${alpha})`;
 }

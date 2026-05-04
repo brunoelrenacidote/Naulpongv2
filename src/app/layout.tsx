@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Press_Start_2P, VT323 } from "next/font/google";
 import "./globals.css";
 
@@ -20,6 +20,14 @@ export const metadata: Metadata = {
   title: "NauLPong — Pong 1v1 con Poderes",
   description:
     "Pong online 1v1 con power-ups locos. Jugá contra El Clavel o El que va por su hijo a la fiesta.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#0a0a14",
 };
 
 export default function RootLayout({

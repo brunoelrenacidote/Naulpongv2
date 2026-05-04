@@ -6,8 +6,9 @@ export const BALL_SIZE = 4;
 export const TICK_HZ = 30;
 export const TICK_MS = 1000 / TICK_HZ;
 export const WIN_SCORE = 7;
-export const PADDLE_SPEED = 160; // px/s
-export const BALL_BASE_SPEED = 140; // px/s
+export const PADDLE_SPEED = 260; // px/s — faster, more responsive
+export const PADDLE_DRAG_SPEED = 720; // px/s — drag/touch follows finger fast
+export const BALL_BASE_SPEED = 150; // px/s
 export const BALL_MAX_SPEED = 320;
 export const BALL_SPEED_INC = 8; // per paddle hit
 
@@ -128,6 +129,7 @@ export interface GameState {
   extraBalls: BallState[];
   orbs: PowerOrbState[];
   characters: { left: CharacterId; right: CharacterId };
+  nicks: { left: string; right: string };
   speedMul: number; // global ball speed multiplier (slow mo)
   speedMulUntil: number;
   winner: Side | null;
@@ -136,7 +138,8 @@ export interface GameState {
 }
 
 export type ClientMessage =
-  | { type: "input"; up: boolean; down: boolean }
+  | { type: "input"; up: boolean; down: boolean; targetY?: number | null }
+  | { type: "nick"; nick: string }
   | { type: "rematch" }
   | { type: "ready" }
   | { type: "ping"; t: number };

@@ -6,10 +6,12 @@ import {
   FIELD_H,
   FIELD_W,
   GameState,
+  PADDLE_DRAG_SPEED,
   PADDLE_H,
   PADDLE_SPEED,
   PADDLE_W,
   PaddleState,
+  Phase,
   PowerId,
   POWER_IDS,
   PowerOrbState,
@@ -33,6 +35,7 @@ export function createInitialState(now: number): GameState {
     extraBalls: [],
     orbs: [],
     characters: pickRandomCharacters(),
+    nicks: { left: "", right: "" },
     speedMul: 1,
     speedMulUntil: 0,
     winner: null,
@@ -61,8 +64,8 @@ export function setPlaying(state: GameState) {
 }
 
 export interface Inputs {
-  left: { up: boolean; down: boolean };
-  right: { up: boolean; down: boolean };
+  left: { up: boolean; down: boolean; targetY?: number | null };
+  right: { up: boolean; down: boolean; targetY?: number | null };
 }
 
 export function tick(state: GameState, inputs: Inputs, dt: number, now: number) {
@@ -108,23 +111,15 @@ export function tick(state: GameState, inputs: Inputs, dt: number, now: number) 
   movePaddle(state.paddles.left, inputs.left, now, dt);
   movePaddle(state.paddles.right, inputs.right, now, dt);
 
-  // Move balls
-  const balls = [state.ball, ...state.extraBalls];
-  const ballsToKeep: BallState[] = [];
-  for (let i = 0; i < balls.length; i++) {
-    const b = balls[i];
-    const result = moveBall(state, b, dt, now);
-    if (result === "removed") {
-      // an extra ball that scored or was removed; primary ball respawns instead
-      if (i === 0) {
-        ballsToKeep.push(b);
-      }
-    } else {
-      ballsToKeep.push(b);
-    }
-  }
-  state.ball = ballsToKeep[0];
-  state.extraBalls = ballsToKeep.slice(1);
+  // Move primary ball; if it scores, onGoal already replaced state.ball and
+  // flipped the phase to GOAL, so we abort the rest of this tick.
+  moveBall(state, state.ball, dt, now);
+  if ((state.phase as Phase) === "GOAL") return;
+
+  // Extra balls (multi-ball power-ups, future): score is ignored, just bounce
+  // them. If one scores we drop it and continue.
+  state.extraBalls = state.extraBalls.filter((b) => moveBall(state, b, dt, now) !== "scored");
+  if ((state.phase as Phase) === "GOAL") return;
 
   // Maybe spawn power orbs
   maybeSpawnOrb(state, now);
@@ -154,26 +149,48 @@ function expireBuffs(p: PaddleState, now: number) {
 
 function movePaddle(
   p: PaddleState,
-  input: { up: boolean; down: boolean },
+  input: { up: boolean; down: boolean; targetY?: number | null },
   now: number,
   dt: number,
 ) {
   if (p.frozenUntil > now) return;
+  const inverted = p.invertedUntil > now;
+
+  // Touch / pointer drag mode: paddle homes toward targetY (a desired CENTER y in field coords)
+  // Uses a much higher cap so it tracks the finger smoothly.
+  if (typeof input.targetY === "number") {
+    const dragStep = PADDLE_DRAG_SPEED * p.speedMul * dt;
+    let target = input.targetY - p.height / 2;
+    if (inverted) target = FIELD_H - target - p.height;
+    target = clamp(target, 0, FIELD_H - p.height);
+    const delta = target - p.y;
+    if (Math.abs(delta) <= dragStep) {
+      p.y = target;
+    } else {
+      p.y += Math.sign(delta) * dragStep;
+    }
+    return;
+  }
+
+  // Keyboard / button mode: up/down booleans
+  const speed = PADDLE_SPEED * p.speedMul;
+  const maxStep = speed * dt;
   let up = input.up;
   let down = input.down;
-  if (p.invertedUntil > now) {
-    [up, down] = [down, up];
-  }
+  if (inverted) [up, down] = [down, up];
   let dy = 0;
   if (up) dy -= 1;
   if (down) dy += 1;
   if (dy === 0) return;
-  p.y += dy * PADDLE_SPEED * p.speedMul * dt;
-  if (p.y < 0) p.y = 0;
-  if (p.y + p.height > FIELD_H) p.y = FIELD_H - p.height;
+  p.y += dy * maxStep;
+  p.y = clamp(p.y, 0, FIELD_H - p.height);
 }
 
-function moveBall(state: GameState, b: BallState, dt: number, now: number): "ok" | "removed" {
+function clamp(v: number, lo: number, hi: number) {
+  return v < lo ? lo : v > hi ? hi : v;
+}
+
+function moveBall(state: GameState, b: BallState, dt: number, now: number): "ok" | "scored" {
   // Curve effect
   if (b.curveUntil > now) {
     // sinusoidal vertical wobble
@@ -231,12 +248,11 @@ function moveBall(state: GameState, b: BallState, dt: number, now: number): "ok"
 
     // Goal check
     if (b.x + b.size < 0) {
-      // right scored against left
       onGoal(state, "right", now, b);
-      return "ok"; // primary ball; will be reset by onGoal
+      return "scored";
     } else if (b.x > FIELD_W) {
       onGoal(state, "left", now, b);
-      return "ok";
+      return "scored";
     }
   }
 
@@ -277,13 +293,13 @@ function onGoal(state: GameState, scorer: Side, now: number, ball: BallState) {
   state.orbs = [];
   // tiny pause
   state.phase = "GOAL";
-  state.goalEndsAt = now + 1200;
+  state.goalEndsAt = now + 700;
 }
 
 function maybeSpawnOrb(state: GameState, now: number) {
   if (state.orbs.length >= 2) return;
-  // Spawn probability tuned to ~ 1 per 5-9s
-  if (Math.random() > 0.005) return;
+  // ~1 orb every 3-5s at 30Hz
+  if (Math.random() > 0.008) return;
 
   const id = `orb-${state.tick}-${Math.floor(Math.random() * 9999)}`;
   const power = POWER_IDS[Math.floor(Math.random() * POWER_IDS.length)];

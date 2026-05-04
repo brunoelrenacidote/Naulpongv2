@@ -6,6 +6,7 @@ import PartySocket from "partysocket";
 import GameCanvas from "@/components/GameCanvas";
 import {
   CHARACTERS,
+  FIELD_H,
   GameState,
   POWER_EMOJIS,
   POWER_LABELS,
@@ -32,23 +33,37 @@ interface Props {
   mode: "quick" | "private";
 }
 
+interface InputState {
+  up: boolean;
+  down: boolean;
+  targetY: number | null;
+}
+
+function readNick(): string {
+  if (typeof window === "undefined") return "";
+  return (window.localStorage.getItem("naulpong:nick") ?? "").toUpperCase();
+}
+
 export default function GameClient({ code, mode }: Props) {
   const [state, setState] = useState<GameState | null>(null);
   const [you, setYou] = useState<Side | "spectator">("spectator");
   const [connected, setConnected] = useState(false);
   const [copied, setCopied] = useState(false);
   const wsRef = useRef<PartySocket | null>(null);
-  const inputRef = useRef<{ up: boolean; down: boolean }>({
+  const inputRef = useRef<InputState>({
     up: false,
     down: false,
+    targetY: null,
   });
-  const lastSentRef = useRef<{ up: boolean; down: boolean }>({
+  const lastSentRef = useRef<InputState>({
     up: false,
     down: false,
+    targetY: null,
   });
   const lastPhaseRef = useRef<string | null>(null);
   const lastEventTRef = useRef<number>(0);
   const lastCountdownNRef = useRef<number>(-1);
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
 
   // Connect
   useEffect(() => {
@@ -59,6 +74,9 @@ export default function GameClient({ code, mode }: Props) {
     wsRef.current = ws;
     ws.addEventListener("open", () => {
       setConnected(true);
+      // send nick once connected
+      const nick = readNick();
+      if (nick) ws.send(JSON.stringify({ type: "nick", nick }));
     });
     ws.addEventListener("close", () => {
       setConnected(false);
@@ -85,18 +103,30 @@ export default function GameClient({ code, mode }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
-  // Send input snapshot regularly
+  // Send input snapshot regularly (when changed, plus periodic targetY refresh)
   useEffect(() => {
     const t = setInterval(() => {
       const cur = inputRef.current;
       const last = lastSentRef.current;
-      if (cur.up !== last.up || cur.down !== last.down) {
+      const targetChanged =
+        cur.targetY !== last.targetY &&
+        !(cur.targetY === null && last.targetY === null);
+      if (
+        cur.up !== last.up ||
+        cur.down !== last.down ||
+        targetChanged
+      ) {
         wsRef.current?.send(
-          JSON.stringify({ type: "input", up: cur.up, down: cur.down }),
+          JSON.stringify({
+            type: "input",
+            up: cur.up,
+            down: cur.down,
+            targetY: cur.targetY,
+          }),
         );
         lastSentRef.current = { ...cur };
       }
-    }, 30);
+    }, 33);
     return () => clearInterval(t);
   }, []);
 
@@ -107,10 +137,12 @@ export default function GameClient({ code, mode }: Props) {
       if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
         if (!inputRef.current.up) changed = true;
         inputRef.current.up = true;
+        inputRef.current.targetY = null; // keyboard wins over drag
       }
       if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
         if (!inputRef.current.down) changed = true;
         inputRef.current.down = true;
+        inputRef.current.targetY = null;
       }
       if (changed) {
         unlockAudio();
@@ -133,28 +165,76 @@ export default function GameClient({ code, mode }: Props) {
     };
   }, []);
 
-  // Touch input — split screen vertically: tap upper half = up, lower half = down
-  const onTouch = useCallback((e: React.TouchEvent | React.MouseEvent) => {
-    unlockAudio();
-    const target = e.currentTarget as HTMLDivElement;
-    const rect = target.getBoundingClientRect();
-    const clientY =
-      "touches" in e
-        ? e.touches[0]?.clientY ?? rect.top
-        : (e as React.MouseEvent).clientY;
-    const relY = clientY - rect.top;
-    const isUp = relY < rect.height / 2;
-    inputRef.current.up = isUp;
-    inputRef.current.down = !isUp;
-  }, []);
-
-  const onTouchEnd = useCallback(() => {
+  // Drag input — paddle follows finger / pointer Y, mapped into field coords.
+  // Works on mobile (touchstart/touchmove) and desktop (mousedown/mousemove).
+  const setTargetFromClientY = useCallback((clientY: number) => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    const rect = surface.getBoundingClientRect();
+    const rel = (clientY - rect.top) / rect.height;
+    const fieldY = Math.max(0, Math.min(FIELD_H, rel * FIELD_H));
+    inputRef.current.targetY = fieldY;
     inputRef.current.up = false;
     inputRef.current.down = false;
   }, []);
 
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+
+    let dragging = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
+      e.preventDefault();
+      unlockAudio();
+      dragging = true;
+      setTargetFromClientY(e.touches[0].clientY);
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!dragging || e.touches.length === 0) return;
+      e.preventDefault();
+      setTargetFromClientY(e.touches[0].clientY);
+    };
+    const onTouchEnd = () => {
+      dragging = false;
+      inputRef.current.targetY = null;
+    };
+    const onMouseDown = (e: MouseEvent) => {
+      e.preventDefault();
+      unlockAudio();
+      dragging = true;
+      setTargetFromClientY(e.clientY);
+    };
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging) return;
+      setTargetFromClientY(e.clientY);
+    };
+    const onMouseUp = () => {
+      dragging = false;
+      inputRef.current.targetY = null;
+    };
+
+    surface.addEventListener("touchstart", onTouchStart, { passive: false });
+    surface.addEventListener("touchmove", onTouchMove, { passive: false });
+    surface.addEventListener("touchend", onTouchEnd);
+    surface.addEventListener("touchcancel", onTouchEnd);
+    surface.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+
+    return () => {
+      surface.removeEventListener("touchstart", onTouchStart);
+      surface.removeEventListener("touchmove", onTouchMove);
+      surface.removeEventListener("touchend", onTouchEnd);
+      surface.removeEventListener("touchcancel", onTouchEnd);
+      surface.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [setTargetFromClientY]);
+
   function handleSounds(s: GameState) {
-    // Countdown ticks
     if (s.phase === "COUNTDOWN") {
       const remaining = Math.max(0, s.countdownEndsAt - s.now);
       const n = Math.ceil(remaining / 1000);
@@ -221,8 +301,24 @@ export default function GameClient({ code, mode }: Props) {
   const leftCh = state ? CHARACTERS[state.characters.left] : null;
   const rightCh = state ? CHARACTERS[state.characters.right] : null;
 
+  const phaseLabel = (() => {
+    if (!state) return "...";
+    switch (state.phase) {
+      case "WAITING":
+        return "ESPERANDO";
+      case "COUNTDOWN":
+        return "LISTO?";
+      case "PLAYING":
+        return "JUGAR";
+      case "GOAL":
+        return "GOL!";
+      case "FINISHED":
+        return "FIN";
+    }
+  })();
+
   return (
-    <div className="flex w-full flex-col items-center gap-3">
+    <div className="flex w-full flex-col items-center gap-2">
       <div className="flex w-full items-center justify-between gap-2 px-1">
         <Link
           href="/"
@@ -248,18 +344,20 @@ export default function GameClient({ code, mode }: Props) {
       <div className="flex w-full max-w-[960px] items-center justify-between gap-2 rounded border border-white/10 bg-black/40 p-2">
         <PlayerCard
           ch={leftCh}
+          nick={state?.nicks?.left ?? ""}
           score={state?.scores.left ?? 0}
           you={you === "left"}
           paddleEffects={state ? activeEffects(state, "left") : []}
         />
-        <div className="font-press text-center text-xs text-white/70 sm:text-sm">
-          <div>{state?.phase ?? "..."}</div>
+        <div className="font-press flex flex-col items-center text-center text-[10px] text-white/70">
+          <div className="text-xs sm:text-sm">{phaseLabel}</div>
           {mode === "quick" && state?.phase === "WAITING" && (
             <div className="text-[8px] opacity-70">PARTIDA RÁPIDA</div>
           )}
         </div>
         <PlayerCard
           ch={rightCh}
+          nick={state?.nicks?.right ?? ""}
           score={state?.scores.right ?? 0}
           you={you === "right"}
           paddleEffects={state ? activeEffects(state, "right") : []}
@@ -269,21 +367,15 @@ export default function GameClient({ code, mode }: Props) {
 
       {/* Game canvas */}
       <div
+        ref={surfaceRef}
         className="w-full max-w-[960px] touch-none select-none"
-        onTouchStart={onTouch}
-        onTouchMove={onTouch}
-        onTouchEnd={onTouchEnd}
-        onMouseDown={(e) => {
-          if (window.matchMedia("(pointer: coarse)").matches) onTouch(e);
-        }}
-        onMouseUp={onTouchEnd}
-        onMouseLeave={onTouchEnd}
+        style={{ cursor: "grab" }}
       >
         <GameCanvas state={state} you={you} />
       </div>
 
-      {/* Bottom panel: instructions / actions */}
-      <div className="font-press flex w-full max-w-[960px] flex-wrap items-center justify-center gap-3 rounded border border-white/10 bg-black/40 p-2 text-[10px] text-white/70">
+      {/* Bottom panel */}
+      <div className="font-press flex w-full max-w-[960px] flex-wrap items-center justify-center gap-3 rounded border border-white/10 bg-black/40 p-2 text-center text-[10px] text-white/70">
         {state?.phase === "WAITING" && (
           <span>
             COMPARTÍ EL CÓDIGO <span className="glow-cyan">{code}</span> O EL
@@ -291,12 +383,10 @@ export default function GameClient({ code, mode }: Props) {
           </span>
         )}
         {playing && (
-          <>
-            <span>
-              ↑ / W : ARRIBA &nbsp;&nbsp; ↓ / S : ABAJO &nbsp;&nbsp;
-              <span className="opacity-60">(en mobile, tocá la mitad superior/inferior)</span>
-            </span>
-          </>
+          <span>
+            <span className="opacity-90">DESLIZÁ</span> arriba/abajo en la
+            cancha &nbsp;·&nbsp; ↑/↓ o W/S en teclado
+          </span>
         )}
         {state?.phase === "FINISHED" && (
           <div className="flex flex-col items-center gap-3">
@@ -325,7 +415,6 @@ export default function GameClient({ code, mode }: Props) {
         )}
       </div>
 
-      {/* Power legend */}
       <details className="font-press w-full max-w-[960px] rounded border border-white/10 bg-black/30 p-2 text-[9px] text-white/60">
         <summary className="cursor-pointer">PODERES (clic para abrir)</summary>
         <ul className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-4">
@@ -361,12 +450,14 @@ function activeEffects(state: GameState, side: Side): string[] {
 
 function PlayerCard({
   ch,
+  nick,
   score,
   you,
   paddleEffects,
   right,
 }: {
   ch: { id: string; name: string; color: string; emoji: string } | null;
+  nick: string;
   score: number;
   you: boolean;
   paddleEffects: string[];
@@ -379,29 +470,37 @@ function PlayerCard({
       </div>
     );
   }
+  const display = nick || (you ? "VOS" : "P" + (right ? "2" : "1"));
   return (
     <div
-      className={`flex flex-1 items-center gap-3 ${
+      className={`flex flex-1 items-center gap-2 sm:gap-3 ${
         right ? "flex-row-reverse text-right" : ""
       }`}
     >
       <div
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded border-2 sm:h-16 sm:w-16"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded border-2 sm:h-14 sm:w-14"
         style={{
           borderColor: ch.color,
-          boxShadow: `0 0 12px ${ch.color}`,
+          boxShadow: `0 0 10px ${ch.color}`,
           background: "rgba(0,0,0,0.6)",
+          imageRendering: "pixelated",
         }}
       >
         <span className="text-2xl sm:text-3xl">{ch.emoji}</span>
       </div>
       <div className={`flex flex-col ${right ? "items-end" : "items-start"}`}>
         <div
-          className="font-press text-[8px] sm:text-[10px]"
+          className="font-press text-[8px] sm:text-[9px]"
+          style={{ color: ch.color }}
+        >
+          {display}
+          {you ? " (VOS)" : ""}
+        </div>
+        <div
+          className="font-press text-[7px] opacity-60 sm:text-[8px]"
           style={{ color: ch.color }}
         >
           {ch.name}
-          {you ? " (VOS)" : ""}
         </div>
         <div className="font-press text-2xl text-white sm:text-3xl">{score}</div>
         <div className="text-base sm:text-lg">{paddleEffects.join(" ")}</div>
