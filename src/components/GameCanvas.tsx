@@ -12,11 +12,80 @@ import {
   Side,
 } from "@/lib/game-types";
 
-const DRAW_SCALE = 3; // 320*3 = 960 px wide canvas; we'll fit-to-container with CSS.
+const DRAW_SCALE = 3;
 
 interface Props {
   state: GameState | null;
   you: Side | "spectator";
+}
+
+interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number; // ms remaining
+  maxLife: number;
+  size: number;
+  color: string;
+  gravity: number;
+}
+
+interface TrailPoint {
+  x: number;
+  y: number;
+  t: number;
+}
+
+interface Star {
+  x: number;
+  y: number;
+  speed: number; // twinkle phase speed
+  phase: number;
+}
+
+interface Crowdy {
+  x: number;
+  color: string;
+  bobOffset: number; // phase
+  hatColor: string;
+}
+
+interface Anim {
+  particles: Particle[];
+  trail: TrailPoint[];
+  stars: Star[];
+  crowd: Crowdy[];
+  lastEventT: number;
+  lastFrameT: number;
+}
+
+function makeStars(): Star[] {
+  const stars: Star[] = [];
+  for (let i = 0; i < 30; i++) {
+    stars.push({
+      x: Math.random() * FIELD_W,
+      y: Math.random() * (FIELD_H - 16) + 8,
+      speed: 0.001 + Math.random() * 0.003,
+      phase: Math.random() * Math.PI * 2,
+    });
+  }
+  return stars;
+}
+
+function makeCrowd(): Crowdy[] {
+  const c: Crowdy[] = [];
+  const colors = ["#5cffe0", "#ff5cd1", "#ffd95c", "#5cff8a", "#ff8a3d", "#bb88ff", "#a0e8ff", "#ff5c5c"];
+  const hats = ["#ff5cd1", "#ffd95c", "#5cffe0", "#ffffff", "#5cff8a"];
+  for (let i = 0; i < 28; i++) {
+    c.push({
+      x: 4 + i * 11 + (Math.random() * 2 - 1),
+      color: colors[i % colors.length],
+      bobOffset: Math.random() * Math.PI * 2,
+      hatColor: hats[i % hats.length],
+    });
+  }
+  return c;
 }
 
 export default function GameCanvas({ state, you }: Props) {
@@ -24,6 +93,14 @@ export default function GameCanvas({ state, you }: Props) {
   const stateRef = useRef<GameState | null>(state);
   const youRef = useRef<Side | "spectator">(you);
   const rafRef = useRef<number | null>(null);
+  const animRef = useRef<Anim>({
+    particles: [],
+    trail: [],
+    stars: makeStars(),
+    crowd: makeCrowd(),
+    lastEventT: 0,
+    lastFrameT: 0,
+  });
 
   useEffect(() => {
     stateRef.current = state;
@@ -42,8 +119,11 @@ export default function GameCanvas({ state, you }: Props) {
     if (!ctx) return;
     ctx.imageSmoothingEnabled = false;
 
-    const loop = () => {
-      drawFrame(ctx, stateRef.current, youRef.current);
+    const loop = (ts: number) => {
+      const anim = animRef.current;
+      const dt = anim.lastFrameT === 0 ? 16 : Math.min(60, ts - anim.lastFrameT);
+      anim.lastFrameT = ts;
+      drawFrame(ctx, stateRef.current, youRef.current, anim, ts, dt);
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
@@ -72,17 +152,27 @@ function drawFrame(
   ctx: CanvasRenderingContext2D,
   state: GameState | null,
   you: Side | "spectator",
+  anim: Anim,
+  frameT: number,
+  dt: number,
 ) {
   const W = FIELD_W * DRAW_SCALE;
   const H = FIELD_H * DRAW_SCALE;
-  ctx.fillStyle = "#000";
+  ctx.fillStyle = "#050216";
   ctx.fillRect(0, 0, W, H);
 
-  // Background draw (in field-space)
+  // Field-space drawing
   ctx.save();
   ctx.scale(DRAW_SCALE, DRAW_SCALE);
 
-  // Side bands hinting players' colors (super faint)
+  // Background stars (twinkle)
+  for (const s of anim.stars) {
+    const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(frameT * s.speed + s.phase));
+    ctx.fillStyle = `rgba(255,255,255,${a * 0.6})`;
+    ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
+  }
+
+  // Side bands hinting players' colors
   if (state) {
     const leftCh = CHARACTERS[state.characters.left];
     const rightCh = CHARACTERS[state.characters.right];
@@ -99,18 +189,24 @@ function drawFrame(
   }
 
   // Center dashed line
-  ctx.fillStyle = "rgba(92,255,224,0.55)";
+  ctx.fillStyle = "rgba(92,255,224,0.45)";
   for (let y = 0; y < FIELD_H; y += 8) {
     ctx.fillRect(FIELD_W / 2 - 1, y, 2, 4);
   }
 
-  // Subtle grid (dot-grid for blocky retro feel)
+  // Subtle dot grid
   ctx.fillStyle = "rgba(92,255,224,0.10)";
   for (let x = 8; x < FIELD_W; x += 16) {
-    for (let y = 8; y < FIELD_H; y += 16) {
+    for (let y = 24; y < FIELD_H; y += 16) {
       ctx.fillRect(x, y, 1, 1);
     }
   }
+
+  // Crowd at top
+  drawCrowd(ctx, anim.crowd, frameT);
+
+  // Marquee neon strip just below crowd
+  drawMarquee(ctx, frameT);
 
   if (!state) {
     ctx.restore();
@@ -119,66 +215,63 @@ function drawFrame(
     return;
   }
 
-  // Power orbs
+  // Spawn event-based particles
+  if (state.lastEvent && state.lastEvent.t !== anim.lastEventT) {
+    anim.lastEventT = state.lastEvent.t;
+    spawnEventParticles(state, anim);
+  }
+
+  // Update + draw particles
+  updateParticles(anim.particles, dt);
+  drawParticles(ctx, anim.particles);
+
+  // Update trail with current ball pos
+  if (state.phase === "PLAYING" || state.phase === "GOAL") {
+    anim.trail.push({
+      x: state.ball.x + state.ball.size / 2,
+      y: state.ball.y + state.ball.size / 2,
+      t: frameT,
+    });
+    if (anim.trail.length > 14) anim.trail.shift();
+  } else {
+    anim.trail.length = 0;
+  }
+  drawTrail(ctx, anim.trail, frameT);
+
+  // Power orbs (with rotating ring)
   for (const orb of state.orbs) {
-    const t = state.now / 200;
-    const r = 6 + Math.sin(t + orb.x) * 0.8;
-    const grd = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, r * 2);
-    grd.addColorStop(0, colorForPower(orb.power));
-    grd.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(orb.x, orb.y, r * 1.6, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = colorForPower(orb.power);
-    ctx.beginPath();
-    ctx.arc(orb.x, orb.y, r * 0.6, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#fff";
-    ctx.font = "bold 6px monospace";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(POWER_EMOJIS[orb.power], orb.x, orb.y);
+    drawPowerOrb(ctx, orb.x, orb.y, orb.power, frameT);
   }
 
   // Paddles
-  drawPaddle(ctx, "left", state, you);
-  drawPaddle(ctx, "right", state, you);
+  drawPaddle(ctx, "left", state, you, frameT);
+  drawPaddle(ctx, "right", state, you, frameT);
 
   // Balls
-  drawBall(ctx, state.ball.x, state.ball.y, state.ball.size);
-  for (const b of state.extraBalls) drawBall(ctx, b.x, b.y, b.size);
+  drawBall(ctx, state.ball.x, state.ball.y, state.ball.size, frameT);
+  for (const b of state.extraBalls) drawBall(ctx, b.x, b.y, b.size, frameT);
 
-  // Score (chunky retro)
+  // Score
   drawScore(ctx, state.scores.left, FIELD_W / 2 - 28, 16, "#5cffe0");
   drawScore(ctx, state.scores.right, FIELD_W / 2 + 28, 16, "#ff5cd1");
 
   // Nicks under score
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
   ctx.font = '5px "Press Start 2P", monospace';
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(
-    truncate(state.nicks?.left || "P1", 8),
-    FIELD_W / 2 - 28,
-    24,
-  );
-  ctx.fillText(
-    truncate(state.nicks?.right || "P2", 8),
-    FIELD_W / 2 + 28,
-    24,
-  );
+  ctx.fillText(truncate(state.nicks?.left || "P1", 8), FIELD_W / 2 - 28, 24);
+  ctx.fillText(truncate(state.nicks?.right || "P2", 8), FIELD_W / 2 + 28, 24);
 
   ctx.restore();
 
-  // Scanlines + vignette overlay (in screen space)
+  // Scanlines overlay (in screen-pixel space)
   drawScanlines(ctx, W, H);
 
-  // Phase overlays in screen-pixel space
+  // Phase overlays
   if (state.phase === "WAITING") {
     drawCenterText(ctx, W, H, "ESPERANDO RIVAL...", "#ffd95c");
+    drawWaitingMascots(ctx, W, H, state, frameT);
   } else if (state.phase === "COUNTDOWN") {
     const remaining = Math.max(0, state.countdownEndsAt - state.now);
     const n = Math.ceil(remaining / 1000);
@@ -194,9 +287,10 @@ function drawFrame(
     const winnerNick = state.nicks?.[state.winner] || ch.name;
     drawCenterText(ctx, W, H, "GAME OVER", "#ff5cd1", 36);
     drawSubText(ctx, W, H, `GANA ${winnerNick.toUpperCase()}`, ch.color);
+    drawWinnerMascot(ctx, W, H, ch, frameT);
   }
 
-  // Recent power activation flash
+  // Recent power activation banner
   if (
     state.lastEvent?.kind === "power" &&
     state.now - state.lastEvent.t < 1500 &&
@@ -219,11 +313,242 @@ function drawFrame(
   }
 }
 
+function spawnEventParticles(state: GameState, anim: Anim) {
+  const ev = state.lastEvent!;
+  switch (ev.kind) {
+    case "hit": {
+      const side = ev.side!;
+      const ch = CHARACTERS[state.characters[side]];
+      const x = side === "left" ? PADDLE_W + 4 : FIELD_W - 4 - PADDLE_W;
+      const y = state.paddles[side].y + state.paddles[side].height / 2;
+      const dir = side === "left" ? 1 : -1;
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.random() - 0.5) * 1.4;
+        const speed = 60 + Math.random() * 80;
+        anim.particles.push({
+          x,
+          y: y + (Math.random() - 0.5) * 18,
+          vx: Math.cos(angle) * speed * dir,
+          vy: Math.sin(angle) * speed,
+          life: 350,
+          maxLife: 350,
+          size: 1 + Math.random() * 1,
+          color: i % 2 === 0 ? "#ffffff" : ch.color,
+          gravity: 0,
+        });
+      }
+      break;
+    }
+    case "wall": {
+      const b = state.ball;
+      const wallTop = b.y < FIELD_H / 2;
+      for (let i = 0; i < 5; i++) {
+        const angle = (Math.random() - 0.5) * 1.0;
+        const speed = 30 + Math.random() * 50;
+        anim.particles.push({
+          x: b.x + b.size / 2,
+          y: wallTop ? 1 : FIELD_H - 1,
+          vx: Math.cos(angle) * speed * (Math.random() < 0.5 ? -1 : 1),
+          vy: (wallTop ? 1 : -1) * Math.abs(Math.sin(angle) * speed),
+          life: 280,
+          maxLife: 280,
+          size: 1,
+          color: "#5cffe0",
+          gravity: 0,
+        });
+      }
+      break;
+    }
+    case "goal": {
+      const scorer = ev.side!;
+      const ch = CHARACTERS[state.characters[scorer]];
+      const opponent: Side = scorer === "left" ? "right" : "left";
+      const x = opponent === "left" ? 0 : FIELD_W;
+      for (let i = 0; i < 40; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 80 + Math.random() * 160;
+        anim.particles.push({
+          x,
+          y: FIELD_H / 2 + (Math.random() - 0.5) * 40,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 700 + Math.random() * 400,
+          maxLife: 1100,
+          size: 1 + Math.floor(Math.random() * 2),
+          color: i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? ch.color : "#ffd95c",
+          gravity: 80,
+        });
+      }
+      break;
+    }
+    case "power": {
+      const color = ev.power ? colorForPower(ev.power) : "#fff";
+      const b = state.ball;
+      for (let i = 0; i < 18; i++) {
+        const angle = (i / 18) * Math.PI * 2;
+        const speed = 40 + Math.random() * 80;
+        anim.particles.push({
+          x: b.x + b.size / 2,
+          y: b.y + b.size / 2,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 600,
+          maxLife: 600,
+          size: 1 + Math.random() * 1,
+          color: i % 2 === 0 ? "#ffffff" : color,
+          gravity: 0,
+        });
+      }
+      break;
+    }
+    case "spawn": {
+      // small twinkle when orb appears
+      if (state.orbs.length > 0) {
+        const orb = state.orbs[state.orbs.length - 1];
+        const color = colorForPower(orb.power);
+        for (let i = 0; i < 8; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 20 + Math.random() * 30;
+          anim.particles.push({
+            x: orb.x,
+            y: orb.y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 400,
+            maxLife: 400,
+            size: 1,
+            color,
+            gravity: 0,
+          });
+        }
+      }
+      break;
+    }
+  }
+}
+
+function updateParticles(particles: Particle[], dt: number) {
+  const ds = dt / 1000;
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= dt;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+    p.vy += p.gravity * ds;
+    p.x += p.vx * ds;
+    p.y += p.vy * ds;
+  }
+}
+
+function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle[]) {
+  for (const p of particles) {
+    const a = Math.max(0, Math.min(1, p.life / p.maxLife));
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x | 0, p.y | 0, p.size, p.size);
+    ctx.restore();
+  }
+}
+
+function drawTrail(ctx: CanvasRenderingContext2D, trail: TrailPoint[], frameT: number) {
+  if (trail.length < 2) return;
+  const len = trail.length;
+  for (let i = 0; i < len; i++) {
+    const p = trail[i];
+    const age = (frameT - p.t) / 200; // ~200ms fade
+    const a = Math.max(0, 1 - age);
+    if (a <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = a * 0.6;
+    ctx.fillStyle = i % 2 === 0 ? "#ffffff" : "#ffd95c";
+    const sz = Math.max(1, Math.floor(2 * (i / len)));
+    ctx.fillRect((p.x - sz / 2) | 0, (p.y - sz / 2) | 0, sz, sz);
+    ctx.restore();
+  }
+}
+
+function drawCrowd(ctx: CanvasRenderingContext2D, crowd: Crowdy[], frameT: number) {
+  // crowd lives in y=0..6, very thin row of "heads"
+  for (const c of crowd) {
+    const bob = Math.sin(frameT * 0.006 + c.bobOffset) > 0 ? 0 : 1;
+    const baseY = 1 + bob;
+    // hat
+    ctx.fillStyle = c.hatColor;
+    ctx.fillRect(c.x, baseY, 4, 1);
+    // head
+    ctx.fillStyle = c.color;
+    ctx.fillRect(c.x, baseY + 1, 4, 3);
+    // eyes (single pixel)
+    ctx.fillStyle = "#000";
+    ctx.fillRect(c.x + 1, baseY + 2, 1, 1);
+    ctx.fillRect(c.x + 2, baseY + 2, 1, 1);
+  }
+}
+
+function drawMarquee(ctx: CanvasRenderingContext2D, frameT: number) {
+  // alternating neon dots that scroll across the top, just under crowd
+  const y = 6;
+  for (let x = 0; x < FIELD_W; x += 6) {
+    const phase = ((x / 6) + frameT * 0.004) % 4;
+    const colors = ["#ffd95c", "#ff5cd1", "#5cffe0", "#5cff8a"];
+    ctx.fillStyle = colors[Math.floor(phase) % colors.length];
+    ctx.fillRect(x, y, 2, 1);
+  }
+}
+
+function drawPowerOrb(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  power: keyof typeof POWER_EMOJIS,
+  frameT: number,
+) {
+  const color = colorForPower(power);
+  const t = frameT * 0.005;
+
+  // pulsing glow
+  const glowR = 9 + Math.sin(frameT * 0.008) * 1.2;
+  const grd = ctx.createRadialGradient(x, y, 0, x, y, glowR);
+  grd.addColorStop(0, color);
+  grd.addColorStop(0.5, hexToRgba(color, 0.5));
+  grd.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(x, y, glowR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // rotating sparkle ring (4 dots)
+  for (let i = 0; i < 4; i++) {
+    const ang = t + (i * Math.PI) / 2;
+    const rx = x + Math.cos(ang) * 7;
+    const ry = y + Math.sin(ang) * 7;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect((rx - 0.5) | 0, (ry - 0.5) | 0, 1, 1);
+  }
+
+  // core
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, 3.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // emoji label on top
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 6px monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(POWER_EMOJIS[power], x, y);
+}
+
 function drawPaddle(
   ctx: CanvasRenderingContext2D,
   side: Side,
   state: GameState,
   you: Side | "spectator",
+  frameT: number,
 ) {
   const p = state.paddles[side];
   const x = side === "left" ? 4 : FIELD_W - 4 - PADDLE_W;
@@ -231,18 +556,22 @@ function drawPaddle(
   const color = ch.color;
   const isYou = you === side;
 
-  // glow
+  // animated glow that pulses subtly
+  const glow = 8 + Math.sin(frameT * 0.005 + (side === "left" ? 0 : Math.PI)) * 2;
   ctx.save();
   ctx.shadowColor = color;
-  ctx.shadowBlur = 10;
+  ctx.shadowBlur = glow;
   ctx.fillStyle = color;
   ctx.fillRect(x, p.y, PADDLE_W, p.height);
-  // inner highlight (lighter shade)
   ctx.shadowBlur = 0;
-  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  // top highlight + bottom shadow
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
   ctx.fillRect(x, p.y, PADDLE_W, 2);
-  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
   ctx.fillRect(x, p.y + p.height - 2, PADDLE_W, 2);
+  // center accent
+  ctx.fillStyle = "rgba(255,255,255,0.25)";
+  ctx.fillRect(x + 1, p.y + p.height / 2 - 1, PADDLE_W - 2, 2);
   ctx.restore();
 
   // shield indicator
@@ -251,8 +580,9 @@ function drawPaddle(
     ctx.strokeStyle = "rgba(255,255,255,0.85)";
     ctx.lineWidth = 1;
     const cy = p.y + p.height / 2;
+    const r = p.height / 2 + 4 + Math.sin(frameT * 0.01) * 0.5;
     ctx.beginPath();
-    ctx.arc(x + PADDLE_W / 2, cy, p.height / 2 + 4, 0, Math.PI * 2);
+    ctx.arc(x + PADDLE_W / 2, cy, r, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
@@ -269,13 +599,14 @@ function drawPaddle(
     ctx.restore();
   }
 
-  // "VOS" indicator (your paddle)
+  // "VOS" indicator (small triangle pointing down at your paddle)
   if (isYou) {
     ctx.save();
     ctx.fillStyle = color;
     ctx.font = '5px "Press Start 2P", monospace';
     ctx.textAlign = "center";
-    ctx.fillText("▼", x + PADDLE_W / 2, p.y - 2);
+    const bob = Math.sin(frameT * 0.008) > 0 ? 0 : 1;
+    ctx.fillText("▼", x + PADDLE_W / 2, p.y - 2 - bob);
     ctx.restore();
   }
 }
@@ -285,21 +616,25 @@ function drawBall(
   x: number,
   y: number,
   size: number,
+  frameT: number,
 ) {
   ctx.save();
-  // outer glow
-  ctx.shadowColor = "#fff";
-  ctx.shadowBlur = 10;
-  ctx.fillStyle = "#fff";
+  // pulsing white glow
+  const glow = 8 + Math.sin(frameT * 0.012) * 2;
+  ctx.shadowColor = "#ffffff";
+  ctx.shadowBlur = glow;
+  ctx.fillStyle = "#ffffff";
   ctx.fillRect(x, y, size, size);
-  // pixel highlight
   ctx.shadowBlur = 0;
-  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  // pixel highlight (top-left)
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
   ctx.fillRect(x, y, 1, 1);
+  // shadow corner (bottom-right)
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillRect(x + size - 1, y + size - 1, 1, 1);
   ctx.restore();
 }
 
-// Chunky pixel score using 5x7 retro digits
 function drawScore(
   ctx: CanvasRenderingContext2D,
   n: number,
@@ -318,15 +653,10 @@ function drawScore(
   ctx.restore();
 }
 
-function drawScanlines(
-  ctx: CanvasRenderingContext2D,
-  W: number,
-  H: number,
-) {
+function drawScanlines(ctx: CanvasRenderingContext2D, W: number, H: number) {
   ctx.save();
   ctx.globalAlpha = 0.18;
   ctx.fillStyle = "#000";
-  // horizontal scanlines every 2 device pixels
   for (let y = 0; y < H; y += 3) {
     ctx.fillRect(0, y, W, 1);
   }
@@ -367,6 +697,50 @@ function drawSubText(
   ctx.shadowBlur = 12;
   ctx.fillStyle = color;
   ctx.fillText(text, W / 2, H / 2 + 36);
+  ctx.restore();
+}
+
+function drawWaitingMascots(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  state: GameState,
+  frameT: number,
+) {
+  const left = CHARACTERS[state.characters.left];
+  const right = CHARACTERS[state.characters.right];
+  const bobL = Math.sin(frameT * 0.005) * 4;
+  const bobR = Math.sin(frameT * 0.005 + Math.PI) * 4;
+  ctx.save();
+  ctx.font = "44px serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  // left mascot
+  ctx.shadowColor = left.color;
+  ctx.shadowBlur = 16;
+  ctx.fillText(left.emoji, W * 0.25, H * 0.65 + bobL);
+  // right mascot
+  ctx.shadowColor = right.color;
+  ctx.shadowBlur = 16;
+  ctx.fillText(right.emoji, W * 0.75, H * 0.65 + bobR);
+  ctx.restore();
+}
+
+function drawWinnerMascot(
+  ctx: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  ch: { color: string; emoji: string },
+  frameT: number,
+) {
+  const bob = Math.sin(frameT * 0.008) * 6;
+  ctx.save();
+  ctx.font = "72px serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = ch.color;
+  ctx.shadowBlur = 28;
+  ctx.fillText(ch.emoji, W / 2, H / 2 - 36 + bob);
   ctx.restore();
 }
 
