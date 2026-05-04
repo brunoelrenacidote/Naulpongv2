@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import {
   CHARACTERS,
+  CharacterId,
   FIELD_H,
   FIELD_W,
   GameState,
@@ -11,6 +12,8 @@ import {
   POWER_LABELS,
   Side,
 } from "@/lib/game-types";
+import { Pose, SPRITE_H, SPRITE_W } from "@/lib/character-sprites";
+import { drawCharacter, preloadSprites } from "@/lib/sprite-loader";
 
 const DRAW_SCALE = 3;
 
@@ -111,6 +114,7 @@ export default function GameCanvas({ state, you }: Props) {
   }, [you]);
 
   useEffect(() => {
+    preloadSprites();
     const canvas = canvasRef.current;
     if (!canvas) return;
     canvas.width = FIELD_W * DRAW_SCALE;
@@ -287,7 +291,7 @@ function drawFrame(
     const winnerNick = state.nicks?.[state.winner] || ch.name;
     drawCenterText(ctx, W, H, "GAME OVER", "#ff5cd1", 36);
     drawSubText(ctx, W, H, `GANA ${winnerNick.toUpperCase()}`, ch.color);
-    drawWinnerMascot(ctx, W, H, ch, frameT);
+    drawWinnerMascot(ctx, W, H, state, frameT);
   }
 
   // Recent power activation banner
@@ -700,6 +704,63 @@ function drawSubText(
   ctx.restore();
 }
 
+function poseFor(
+  side: Side,
+  state: GameState,
+  frameT: number,
+): Pose {
+  // Recent goal flash → winner happy, loser sad (for ~1500ms)
+  if (
+    state.lastEvent?.kind === "goal" &&
+    state.now - state.lastEvent.t < 1500
+  ) {
+    const scorer = state.lastEvent.side;
+    if (scorer) return scorer === side ? "happy" : "sad";
+  }
+  if (state.phase === "FINISHED" && state.winner) {
+    return state.winner === side ? "happy" : "sad";
+  }
+  // periodic blink
+  const blinkPhase = Math.floor(frameT / 180) % 32;
+  if (blinkPhase === 0 || blinkPhase === 1) return "blink";
+  return "idle";
+}
+
+function drawSpriteWithFrame(
+  ctx: CanvasRenderingContext2D,
+  id: CharacterId,
+  pose: Pose,
+  cx: number,
+  cy: number,
+  scale: number,
+  glowColor: string,
+) {
+  const w = SPRITE_W * scale;
+  const h = SPRITE_H * scale;
+  const x = cx - w / 2;
+  const y = cy - h / 2;
+
+  // arcade frame around sprite
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.55)";
+  ctx.fillRect(x - 4, y - 4, w + 8, h + 8);
+  ctx.strokeStyle = glowColor;
+  ctx.lineWidth = 2;
+  ctx.shadowColor = glowColor;
+  ctx.shadowBlur = 14;
+  ctx.strokeRect(x - 3, y - 3, w + 6, h + 6);
+  ctx.shadowBlur = 0;
+  // corner blocks for arcade vibe
+  ctx.fillStyle = glowColor;
+  ctx.fillRect(x - 4, y - 4, 4, 4);
+  ctx.fillRect(x + w, y - 4, 4, 4);
+  ctx.fillRect(x - 4, y + h, 4, 4);
+  ctx.fillRect(x + w, y + h, 4, 4);
+  ctx.restore();
+
+  drawCharacter(ctx, id, pose, x, y, scale);
+}
+
 function drawWaitingMascots(
   ctx: CanvasRenderingContext2D,
   W: number,
@@ -709,20 +770,36 @@ function drawWaitingMascots(
 ) {
   const left = CHARACTERS[state.characters.left];
   const right = CHARACTERS[state.characters.right];
-  const bobL = Math.sin(frameT * 0.005) * 4;
-  const bobR = Math.sin(frameT * 0.005 + Math.PI) * 4;
+  const bobL = Math.sin(frameT * 0.005) * 6;
+  const bobR = Math.sin(frameT * 0.005 + Math.PI) * 6;
+  const scale = 4;
+  drawSpriteWithFrame(
+    ctx,
+    state.characters.left,
+    poseFor("left", state, frameT),
+    W * 0.25,
+    H * 0.65 + bobL,
+    scale,
+    left.color,
+  );
+  drawSpriteWithFrame(
+    ctx,
+    state.characters.right,
+    poseFor("right", state, frameT),
+    W * 0.75,
+    H * 0.65 + bobR,
+    scale,
+    right.color,
+  );
+  // VS divider
   ctx.save();
-  ctx.font = "44px serif";
+  ctx.font = '20px "Press Start 2P", monospace';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  // left mascot
-  ctx.shadowColor = left.color;
-  ctx.shadowBlur = 16;
-  ctx.fillText(left.emoji, W * 0.25, H * 0.65 + bobL);
-  // right mascot
-  ctx.shadowColor = right.color;
-  ctx.shadowBlur = 16;
-  ctx.fillText(right.emoji, W * 0.75, H * 0.65 + bobR);
+  ctx.shadowColor = "#ffd95c";
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = "#ffd95c";
+  ctx.fillText("VS", W / 2, H * 0.65 + Math.sin(frameT * 0.01) * 2);
   ctx.restore();
 }
 
@@ -730,18 +807,22 @@ function drawWinnerMascot(
   ctx: CanvasRenderingContext2D,
   W: number,
   H: number,
-  ch: { color: string; emoji: string },
+  state: GameState,
   frameT: number,
 ) {
-  const bob = Math.sin(frameT * 0.008) * 6;
-  ctx.save();
-  ctx.font = "72px serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.shadowColor = ch.color;
-  ctx.shadowBlur = 28;
-  ctx.fillText(ch.emoji, W / 2, H / 2 - 36 + bob);
-  ctx.restore();
+  const winner = state.winner;
+  if (!winner) return;
+  const ch = CHARACTERS[state.characters[winner]];
+  const bob = Math.sin(frameT * 0.008) * 8;
+  drawSpriteWithFrame(
+    ctx,
+    state.characters[winner],
+    "happy",
+    W / 2,
+    H / 2 - 36 + bob,
+    6,
+    ch.color,
+  );
 }
 
 function colorForPower(p: string): string {

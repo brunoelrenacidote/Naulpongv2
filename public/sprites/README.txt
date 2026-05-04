@@ -1,18 +1,35 @@
 SPRITES PARA NAULPONG
 ======================
 
-Estos archivos son placeholders. Reemplazalos con tus sprites pixel-art.
+Por defecto el juego dibuja sprites pixel-art "a mano" en código (placeholders).
+Si dejás un archivo PNG con uno de los nombres de abajo, el juego usa el PNG
+en lugar del placeholder. Si lo borrás, vuelve al placeholder.
 
-Formato: PNG con fondo transparente, image-rendering: pixelated.
+UBICACIÓN: este mismo directorio (`/public/sprites/`).
 
-Tamaños recomendados (hacelos chicos si querés que se vean re crocantes):
-- hijo-fiesta-avatar.png        64x64 px   (HUD + cara grande en victoria)
-- clavel-avatar.png             64x64 px
-- hijo-fiesta-paddle.png        16x80 px   (opcional, paleta como personaje)
-- clavel-paddle.png             16x80 px   (opcional)
-- hijo-fiesta-win.png          128x128 px  (pose de victoria, opcional)
-- clavel-win.png               128x128 px
+NOMBRES DE ARCHIVO (case-sensitive):
 
-Por ahora el juego usa colores neon + emojis como placeholder.
-Cuando agregues los PNG, los componentes los toman automáticamente desde:
-  /sprites/<nombre>.png
+  hijo-fiesta-idle.png    ← cara normal (default)
+  hijo-fiesta-blink.png   ← parpadeo (cada ~6 segundos por 2 cuadros)
+  hijo-fiesta-happy.png   ← celebración (cuando él mete gol o gana)
+  hijo-fiesta-sad.png     ← decepción (cuando le hacen gol o pierde)
+
+  clavel-idle.png
+  clavel-blink.png
+  clavel-happy.png
+  clavel-sad.png
+
+FORMATO:
+- PNG con fondo transparente
+- Pixel-art a baja resolución
+- Tamaño base recomendado: 16 ancho x 18 alto (chico, queda crocante)
+- Si querés más detalle: 32x36 o 64x72 también funcionan
+  (el juego escala automáticamente, manteniendo `image-rendering: pixelated`)
+
+CONSEJOS:
+- "blink" = lo mismo que idle pero con los ojos cerrados (1-2 px de diferencia)
+- "happy" = sonrisa, ojos abiertos, un poco más de color
+- "sad" = boca abajo, una lagrimita o gesto roto
+
+Si solo te bancas hacer 1 pose, hacé `idle` y los demás caen al placeholder
+del código (que también es pixel-art pero más simple).
