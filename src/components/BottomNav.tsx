@@ -38,7 +38,7 @@ export default function BottomNav() {
   if (pathname.startsWith("/play")) return null;
 
   return (
-    <nav className="bottom-nav" aria-label="Navegación principal">
+    <nav className="bottom-nav v2" aria-label="Navegación principal">
       {ITEMS.map((item) => {
         const active = item.match(pathname);
         return (

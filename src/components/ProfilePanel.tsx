@@ -17,6 +17,81 @@ function readNick(): string {
   return (window.localStorage.getItem("naulpong:nick") ?? "").toUpperCase();
 }
 
+function sanitizeNick(raw: string): string {
+  return raw
+    .replace(/[^A-Za-z0-9 _\-]/g, "")
+    .toUpperCase()
+    .slice(0, 12);
+}
+
+function NickEditor({
+  initial,
+  onChange,
+}: {
+  initial: string;
+  onChange: (n: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(initial);
+
+  useEffect(() => {
+    setDraft(initial);
+  }, [initial]);
+
+  function save() {
+    const clean = sanitizeNick(draft);
+    if (clean.length < 2) return;
+    localStorage.setItem("naulpong:nick", clean);
+    onChange(clean);
+    setEditing(false);
+  }
+
+  return (
+    <section className="flex flex-col items-center gap-2 text-center">
+      <p className="font-press text-[9px] tracking-widest text-white/40">
+        NOMBRE
+      </p>
+      {editing ? (
+        <div className="flex w-full max-w-xs flex-col items-stretch gap-2">
+          <input
+            autoFocus
+            maxLength={12}
+            className="input-arcade text-center"
+            value={draft}
+            onChange={(e) => setDraft(sanitizeNick(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") save();
+              if (e.key === "Escape") setEditing(false);
+            }}
+            aria-label="Tu nombre"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              className="btn-chunky pink"
+              onClick={() => setEditing(false)}
+            >
+              CANCELAR
+            </button>
+            <button className="btn-chunky" onClick={save}>
+              GUARDAR
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="font-press text-2xl tracking-widest text-[var(--neon-cyan)] transition hover:text-white sm:text-3xl"
+          style={{ textShadow: "0 0 12px rgba(92,255,224,0.45)" }}
+          aria-label="Editar nombre"
+        >
+          {initial || "—"}
+        </button>
+      )}
+    </section>
+  );
+}
+
 export default function ProfilePanel() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [unlocked, setUnlocked] = useState<Set<AchievementId>>(new Set());
@@ -44,17 +119,10 @@ export default function ProfilePanel() {
   return (
     <div className="flex w-full flex-col gap-6 sm:gap-8">
       {/* Identity */}
-      <section className="flex flex-col items-center gap-1 text-center">
-        <p className="font-press text-[9px] tracking-widest text-white/40">
-          NOMBRE
-        </p>
-        <p
-          className="font-press text-2xl tracking-widest text-[var(--neon-cyan)] sm:text-3xl"
-          style={{ textShadow: "0 0 12px rgba(92,255,224,0.45)" }}
-        >
-          {nick || "—"}
-        </p>
-      </section>
+      <NickEditor
+        initial={nick}
+        onChange={(n) => setNick(n)}
+      />
 
       {/* Stats grid */}
       <section className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
