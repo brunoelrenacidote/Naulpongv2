@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import PartySocket from "partysocket";
 import ModeCard from "@/components/ModeCard";
+import BattlePassStrip from "@/components/BattlePassStrip";
 import { LobbyServerMessage } from "@/lib/game-types";
 import { partyHost } from "@/lib/party-host";
 
@@ -19,20 +20,54 @@ function generateCode(): string {
 
 type Screen = "menu" | "queue" | "bot" | "private" | "join";
 
+type ModeId = "quick" | "bot" | "private";
+
+interface ModeDef {
+  id: ModeId;
+  glyph: string;
+  title: string;
+  subtitle: string;
+  color: string;
+  cta: string;
+}
+
+const MODES: readonly ModeDef[] = [
+  {
+    id: "quick",
+    glyph: "⚡",
+    title: "PARTIDA RÁPIDA",
+    subtitle: "1v1 online · matchmaking",
+    color: "#ffd95c",
+    cta: "JUGAR",
+  },
+  {
+    id: "bot",
+    glyph: "🤖",
+    title: "VS BOT",
+    subtitle: "3 dificultades · sin internet",
+    color: "#5cff8a",
+    cta: "ELEGIR",
+  },
+  {
+    id: "private",
+    glyph: "🎮",
+    title: "SALA PRIVADA",
+    subtitle: "Crear o unirte con código",
+    color: "#5cffc8",
+    cta: "ABRIR",
+  },
+];
+
 /**
- * Hub de modos. La home no es más un formulario:
- *  - "menu": tarjetas grandes de modos (Partida Rápida / VS Bot / Sala Privada).
- *  - "bot": tarjetas de dificultad.
- *  - "private": Crear / Unirse.
- *  - "join": ingreso de código.
- *  - "queue": pantalla "buscando rival".
- *
- * El nombre del jugador ya viene resuelto por el componente Onboarding,
- * así que acá no se pide.
+ * Lobby central — carrusel horizontal de modos con UN botón gigante PLAY,
+ * estilo Brawl Stars. Detrás conserva las sub-pantallas (cola de matchmaking,
+ * elegir dificultad de bot, crear/unirse a sala) para que el flujo siga siendo
+ * el mismo, solo que la home ya no es un stack de cards.
  */
 export default function HomeActions({ nick }: { nick: string }) {
   const router = useRouter();
   const [screen, setScreen] = useState<Screen>("menu");
+  const [modeIdx, setModeIdx] = useState(0);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [queueState, setQueueState] = useState<{ position: number; total: number }>({
@@ -41,6 +76,7 @@ export default function HomeActions({ nick }: { nick: string }) {
   });
   const [elapsed, setElapsed] = useState(0);
   const lobbyRef = useRef<PartySocket | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     if (screen !== "queue") return;
@@ -116,6 +152,19 @@ export default function HomeActions({ nick }: { nick: string }) {
     if (!ensure()) return;
     const c = generateCode();
     router.push(`/play/${c}?host=1&bot=1&diff=${diff}`);
+  }
+
+  function nextMode(dir: 1 | -1) {
+    setModeIdx((i) => (i + dir + MODES.length) % MODES.length);
+  }
+
+  function play() {
+    setError(null);
+    if (!ensure()) return;
+    const m = MODES[modeIdx];
+    if (m.id === "quick") return startQuickMatch();
+    if (m.id === "bot") return setScreen("bot");
+    if (m.id === "private") return setScreen("private");
   }
 
   if (screen === "queue") {
@@ -222,31 +271,77 @@ export default function HomeActions({ nick }: { nick: string }) {
     );
   }
 
-  // menu
+  // ===== menu (carrusel) =====
+  const m = MODES[modeIdx];
   return (
     <div className="flex w-full max-w-md flex-col gap-3">
-      <ModeCard
-        glyph="⚡"
-        title="PARTIDA RÁPIDA"
-        subtitle="1v1 online contra un random."
-        color="#ffd95c"
-        hero
-        onClick={startQuickMatch}
-      />
-      <ModeCard
-        glyph="🤖"
-        title="VS BOT"
-        subtitle="Practicá en 3 dificultades."
-        color="#5cff8a"
-        onClick={() => setScreen("bot")}
-      />
-      <ModeCard
-        glyph="🎮"
-        title="SALA PRIVADA"
-        subtitle="Crear o unirte con código."
-        color="#5cffc8"
-        onClick={() => setScreen("private")}
-      />
+      <div
+        className="mode-carousel"
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(e) => {
+          const start = touchStartX.current;
+          if (start == null) return;
+          const end = e.changedTouches[0]?.clientX ?? start;
+          const dx = end - start;
+          if (Math.abs(dx) > 40) nextMode(dx < 0 ? 1 : -1);
+          touchStartX.current = null;
+        }}
+      >
+        <button
+          type="button"
+          className="mode-arrow left"
+          onClick={() => nextMode(-1)}
+          aria-label="Modo anterior"
+        >
+          ‹
+        </button>
+
+        <div
+          className="mode-card hero mode-card-carousel"
+          style={{ ["--mc-color" as string]: m.color }}
+          role="group"
+          aria-label={m.title}
+        >
+          <div className="mc-icon" aria-hidden>{m.glyph}</div>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="mc-title truncate">{m.title}</span>
+            <span className="mc-sub truncate">{m.subtitle}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className="mode-arrow right"
+          onClick={() => nextMode(1)}
+          aria-label="Modo siguiente"
+        >
+          ›
+        </button>
+      </div>
+
+      <div className="mode-dots" aria-hidden>
+        {MODES.map((md, i) => (
+          <span
+            key={md.id}
+            className={`mode-dot ${i === modeIdx ? "active" : ""}`}
+          />
+        ))}
+      </div>
+
+      <BattlePassStrip />
+
+      <button
+        type="button"
+        className="btn-play-mega"
+        onClick={play}
+        style={{ ["--mc-color" as string]: m.color }}
+      >
+        <span className="bpm-icon" aria-hidden>▶</span>
+        <span className="bpm-text">{m.cta}</span>
+      </button>
+
       {error && (
         <p className="font-press glow-pink mt-1 text-center text-[10px]">
           ! {error}
