@@ -30,6 +30,7 @@ import {
   unlockAudio,
 } from "@/lib/sounds";
 import { Achievement, recordMatch } from "@/lib/stats";
+import { apiPushStats, loadSession } from "@/lib/auth-client";
 
 interface Props {
   code: string;
@@ -343,6 +344,27 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
       });
       if (result.unlocked.length > 0) {
         setUnlockedAchievements((prev) => [...prev, ...result.unlocked]);
+      }
+      // Cloud sync best-effort. Si no hay sesión, no pasa nada.
+      const session = loadSession();
+      if (session) {
+        const allUnlocked = (() => {
+          try {
+            const raw = window.localStorage.getItem(
+              "naulpong:achievements:v1",
+            );
+            return raw ? (JSON.parse(raw) as string[]) : [];
+          } catch {
+            return [];
+          }
+        })();
+        apiPushStats(
+          session.token,
+          result.newStats,
+          allUnlocked as never,
+        ).catch(() => {
+          /* offline ok */
+        });
       }
     }
   }
