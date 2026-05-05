@@ -20,6 +20,7 @@ import {
   newBall,
   newPaddle,
   pickRandomCharacters,
+  pickRandomStage,
 } from "./game-types";
 
 export function createInitialState(now: number): GameState {
@@ -40,6 +41,7 @@ export function createInitialState(now: number): GameState {
     speedMulUntil: 0,
     winner: null,
     rematchVotes: { left: false, right: false },
+    stage: pickRandomStage(),
   };
 }
 
@@ -56,6 +58,7 @@ export function startCountdown(state: GameState, now: number) {
   state.winner = null;
   state.rematchVotes = { left: false, right: false };
   state.characters = pickRandomCharacters();
+  state.stage = pickRandomStage();
 }
 
 export function setPlaying(state: GameState) {

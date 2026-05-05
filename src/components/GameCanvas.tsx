@@ -11,6 +11,8 @@ import {
   POWER_GLYPHS,
   POWER_LABELS,
   Side,
+  StageId,
+  STAGE_LABELS,
 } from "@/lib/game-types";
 import { Pose, SPRITE_H, SPRITE_W } from "@/lib/character-sprites";
 import { drawCharacter, preloadSprites } from "@/lib/sprite-loader";
@@ -175,19 +177,17 @@ function drawFrame(
 ) {
   const W = FIELD_W * DRAW_SCALE;
   const H = FIELD_H * DRAW_SCALE;
-  ctx.fillStyle = "#050216";
+  const stage: StageId = state?.stage ?? "barrio";
+  const stageCfg = STAGE_CFG[stage];
+  ctx.fillStyle = stageCfg.bg;
   ctx.fillRect(0, 0, W, H);
 
   // Field-space drawing
   ctx.save();
   ctx.scale(DRAW_SCALE, DRAW_SCALE);
 
-  // Background stars (twinkle)
-  for (const s of anim.stars) {
-    const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(frameT * s.speed + s.phase));
-    ctx.fillStyle = `rgba(255,255,255,${a * 0.6})`;
-    ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
-  }
+  // Stage-specific background layer (replaces plain stars)
+  drawStageBg(ctx, stage, anim, frameT);
 
   // Side bands hinting players' colors
   if (state) {
@@ -206,24 +206,21 @@ function drawFrame(
   }
 
   // Center dashed line
-  ctx.fillStyle = "rgba(92,255,224,0.45)";
+  ctx.fillStyle = stageCfg.dash;
   for (let y = 0; y < FIELD_H; y += 8) {
     ctx.fillRect(FIELD_W / 2 - 1, y, 2, 4);
   }
 
   // Subtle dot grid
-  ctx.fillStyle = "rgba(92,255,224,0.10)";
+  ctx.fillStyle = stageCfg.grid;
   for (let x = 8; x < FIELD_W; x += 16) {
     for (let y = 24; y < FIELD_H; y += 16) {
       ctx.fillRect(x, y, 1, 1);
     }
   }
 
-  // Crowd at top
-  drawCrowd(ctx, anim.crowd, frameT);
-
-  // Marquee neon strip just below crowd
-  drawMarquee(ctx, frameT);
+  // Stage-specific top decoration (crowd, marquee, tunnel pipes, etc.)
+  drawStageTop(ctx, stage, anim, frameT);
 
   if (!state) {
     ctx.restore();
@@ -299,11 +296,13 @@ function drawFrame(
   // Phase overlays
   if (state.phase === "WAITING") {
     drawCenterText(ctx, W, H, "ESPERANDO RIVAL...", "#ffd95c");
+    drawSubText(ctx, W, H, `STAGE · ${STAGE_LABELS[state.stage]}`, "#5cffe0", 0.5, 18);
     drawWaitingMascots(ctx, W, H, state, frameT);
   } else if (state.phase === "COUNTDOWN") {
     const remaining = Math.max(0, state.countdownEndsAt - state.now);
     const n = Math.ceil(remaining / 1000);
     drawCenterText(ctx, W, H, n > 0 ? `${n}` : "GO!", "#5cffe0", 64);
+    drawSubText(ctx, W, H, `STAGE · ${STAGE_LABELS[state.stage]}`, "#ffd95c", 0.78, 14);
   } else if (state.phase === "GOAL" && state.lastEvent?.kind === "goal") {
     const scorer = state.lastEvent.side ?? "left";
     const ch = CHARACTERS[state.characters[scorer]];
@@ -646,6 +645,228 @@ function drawTrail(ctx: CanvasRenderingContext2D, trail: TrailPoint[], frameT: n
     const sz = Math.max(1, Math.floor(2 * (i / len)));
     ctx.fillRect((p.x - sz / 2) | 0, (p.y - sz / 2) | 0, sz, sz);
     ctx.restore();
+  }
+}
+
+interface StageCfg {
+  bg: string;
+  dash: string;
+  grid: string;
+}
+
+const STAGE_CFG: Record<StageId, StageCfg> = {
+  barrio: {
+    bg: "#050216",
+    dash: "rgba(92,255,224,0.45)",
+    grid: "rgba(92,255,224,0.10)",
+  },
+  espacio: {
+    bg: "#02030a",
+    dash: "rgba(140,180,255,0.45)",
+    grid: "rgba(140,180,255,0.08)",
+  },
+  disco: {
+    bg: "#160418",
+    dash: "rgba(255,180,255,0.50)",
+    grid: "rgba(255,140,210,0.10)",
+  },
+  subte: {
+    bg: "#0c0a08",
+    dash: "rgba(255,210,90,0.40)",
+    grid: "rgba(255,210,90,0.08)",
+  },
+};
+
+function drawStageBg(
+  ctx: CanvasRenderingContext2D,
+  stage: StageId,
+  anim: Anim,
+  frameT: number,
+) {
+  switch (stage) {
+    case "barrio": {
+      // sky vignette + sparse twinkling stars
+      for (const s of anim.stars) {
+        const a = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(frameT * s.speed + s.phase));
+        ctx.fillStyle = `rgba(255,255,255,${a * 0.5})`;
+        ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
+      }
+      // streetlight glow on the sides
+      const grL = ctx.createRadialGradient(0, FIELD_H, 4, 0, FIELD_H, 80);
+      grL.addColorStop(0, "rgba(255,170,80,0.18)");
+      grL.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grL;
+      ctx.fillRect(0, 0, FIELD_W, FIELD_H);
+      const grR = ctx.createRadialGradient(FIELD_W, FIELD_H, 4, FIELD_W, FIELD_H, 80);
+      grR.addColorStop(0, "rgba(255,170,80,0.18)");
+      grR.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grR;
+      ctx.fillRect(0, 0, FIELD_W, FIELD_H);
+      break;
+    }
+    case "espacio": {
+      // dense starfield with two brightness tiers
+      for (const s of anim.stars) {
+        const a = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(frameT * s.speed + s.phase));
+        ctx.fillStyle = `rgba(200,220,255,${a * 0.7})`;
+        ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
+        // sparser, brighter stars
+        if ((s.x | 0) % 7 === 0) {
+          ctx.fillStyle = `rgba(255,255,255,${a})`;
+          ctx.fillRect(((s.x + 13) | 0) % FIELD_W, ((s.y + 31) | 0) % FIELD_H, 1, 1);
+        }
+      }
+      // distant nebula glow
+      const neb = ctx.createRadialGradient(
+        FIELD_W * 0.25,
+        FIELD_H * 0.35,
+        2,
+        FIELD_W * 0.25,
+        FIELD_H * 0.35,
+        90,
+      );
+      neb.addColorStop(0, "rgba(120,80,200,0.18)");
+      neb.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = neb;
+      ctx.fillRect(0, 0, FIELD_W, FIELD_H);
+      const neb2 = ctx.createRadialGradient(
+        FIELD_W * 0.78,
+        FIELD_H * 0.7,
+        2,
+        FIELD_W * 0.78,
+        FIELD_H * 0.7,
+        80,
+      );
+      neb2.addColorStop(0, "rgba(80,160,220,0.14)");
+      neb2.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = neb2;
+      ctx.fillRect(0, 0, FIELD_W, FIELD_H);
+      // small planet bottom-right
+      ctx.fillStyle = "#5a3a8a";
+      drawPixelDisc(ctx, FIELD_W - 22, FIELD_H - 22, 7);
+      ctx.fillStyle = "#7e5cb5";
+      ctx.fillRect(FIELD_W - 27, FIELD_H - 26, 9, 1);
+      ctx.fillRect(FIELD_W - 28, FIELD_H - 22, 11, 1);
+      break;
+    }
+    case "disco": {
+      // pulsing radial spotlight from above
+      const t = frameT * 0.001;
+      const cx = FIELD_W / 2 + Math.sin(t * 1.4) * 30;
+      const cy = 12;
+      const sp = ctx.createRadialGradient(cx, cy, 4, cx, cy, 120);
+      sp.addColorStop(0, "rgba(255,160,240,0.30)");
+      sp.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = sp;
+      ctx.fillRect(0, 0, FIELD_W, FIELD_H);
+      // checkered floor (subtle, bottom third)
+      const floorY = FIELD_H - 24;
+      for (let x = 0; x < FIELD_W; x += 8) {
+        for (let y = floorY; y < FIELD_H; y += 8) {
+          const cell = ((x / 8) | 0) + ((y / 8) | 0);
+          ctx.fillStyle = cell % 2 === 0
+            ? "rgba(255,80,200,0.10)"
+            : "rgba(120,60,200,0.10)";
+          ctx.fillRect(x, y, 8, 8);
+        }
+      }
+      // glitter sparkles using star data
+      for (const s of anim.stars) {
+        const phase = (frameT * 0.004 + s.phase) % (Math.PI * 2);
+        if (Math.sin(phase) > 0.85) {
+          const palette = ["#ff5cd1", "#ffd95c", "#5cffe0", "#a35cff"];
+          ctx.fillStyle = palette[(s.x | 0) % palette.length];
+          ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
+        }
+      }
+      break;
+    }
+    case "subte": {
+      // tunnel: a few horizontal pipes top + rails bottom
+      // ceiling pipes (dark gray with rivets)
+      ctx.fillStyle = "#2a2622";
+      ctx.fillRect(0, 8, FIELD_W, 3);
+      ctx.fillStyle = "#1a1714";
+      ctx.fillRect(0, 11, FIELD_W, 1);
+      // tube light flicker
+      const flicker = Math.sin(frameT * 0.012) > 0.6 ? 0.55 : 0.85;
+      for (let x = 16; x < FIELD_W; x += 32) {
+        ctx.fillStyle = `rgba(255,235,160,${flicker})`;
+        ctx.fillRect(x, 9, 6, 1);
+      }
+      // rails (tracks at bottom)
+      ctx.fillStyle = "#3b3530";
+      ctx.fillRect(0, FIELD_H - 6, FIELD_W, 2);
+      ctx.fillStyle = "#5a4f44";
+      for (let x = 0; x < FIELD_W; x += 6) {
+        ctx.fillRect(x, FIELD_H - 4, 4, 1);
+      }
+      ctx.fillStyle = "#2a2520";
+      ctx.fillRect(0, FIELD_H - 2, FIELD_W, 2);
+      // graffiti dots on side walls
+      for (const s of anim.stars) {
+        if ((s.y | 0) > FIELD_H - 24 || (s.y | 0) < 16) continue;
+        ctx.fillStyle = "rgba(255,210,90,0.05)";
+        ctx.fillRect(s.x | 0, s.y | 0, 1, 1);
+      }
+      break;
+    }
+  }
+}
+
+function drawPixelDisc(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      if (x * x + y * y <= r * r) ctx.fillRect(cx + x, cy + y, 1, 1);
+    }
+  }
+}
+
+function drawStageTop(
+  ctx: CanvasRenderingContext2D,
+  stage: StageId,
+  anim: Anim,
+  frameT: number,
+) {
+  switch (stage) {
+    case "barrio":
+      drawCrowd(ctx, anim.crowd, frameT);
+      drawMarquee(ctx, frameT);
+      break;
+    case "espacio":
+      // running ticker of small stars and a thin neon strip
+      drawMarquee(ctx, frameT);
+      break;
+    case "disco": {
+      // alternating colored bars at top (DJ booth lights)
+      const colors = ["#ff5cd1", "#ffd95c", "#5cffe0", "#a35cff"];
+      const phase = Math.floor(frameT * 0.012);
+      for (let x = 0; x < FIELD_W; x += 8) {
+        ctx.fillStyle = colors[(x / 8 + phase) % colors.length | 0];
+        ctx.globalAlpha = 0.65;
+        ctx.fillRect(x, 0, 8, 3);
+      }
+      ctx.globalAlpha = 1;
+      drawMarquee(ctx, frameT);
+      break;
+    }
+    case "subte": {
+      // station name plate (flickering)
+      const flicker = Math.sin(frameT * 0.02) > -0.3 ? 1 : 0.45;
+      ctx.save();
+      ctx.globalAlpha = flicker;
+      ctx.fillStyle = "#1a1714";
+      ctx.fillRect(FIELD_W / 2 - 30, 0, 60, 6);
+      ctx.fillStyle = "#3a342a";
+      ctx.fillRect(FIELD_W / 2 - 30, 5, 60, 1);
+      ctx.fillStyle = "#ffd95c";
+      ctx.font = '4px "Press Start 2P", monospace';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("ESTACION 9", FIELD_W / 2, 3);
+      ctx.restore();
+      break;
+    }
   }
 }
 

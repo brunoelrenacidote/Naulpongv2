@@ -97,6 +97,17 @@ export type Phase =
   | "GOAL"
   | "FINISHED";
 
+export type StageId = "barrio" | "espacio" | "disco" | "subte";
+
+export const STAGE_IDS: StageId[] = ["barrio", "espacio", "disco", "subte"];
+
+export const STAGE_LABELS: Record<StageId, string> = {
+  barrio: "BARRIO",
+  espacio: "ESPACIO",
+  disco: "DISCO",
+  subte: "SUBTE",
+};
+
 export interface PaddleState {
   y: number;
   height: number;
@@ -147,6 +158,7 @@ export interface GameState {
   speedMulUntil: number;
   winner: Side | null;
   rematchVotes: { left: boolean; right: boolean };
+  stage: StageId;
   lastEvent?: { kind: "hit" | "goal" | "power" | "wall" | "spawn"; side?: Side; power?: PowerId; t: number };
 }
 
@@ -201,4 +213,8 @@ export function pickRandomCharacters(): { left: CharacterId; right: CharacterId 
   const ids: CharacterId[] = ["hijo-fiesta", "clavel"];
   if (Math.random() < 0.5) ids.reverse();
   return { left: ids[0], right: ids[1] };
+}
+
+export function pickRandomStage(): StageId {
+  return STAGE_IDS[Math.floor(Math.random() * STAGE_IDS.length)];
 }
