@@ -30,6 +30,7 @@ import {
   unlockAudio,
 } from "@/lib/sounds";
 import { Achievement, recordMatch } from "@/lib/stats";
+import { apiPushStats, loadSession } from "@/lib/auth-client";
 
 interface Props {
   code: string;
@@ -54,6 +55,7 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
   const [you, setYou] = useState<Side | "spectator">("spectator");
   const [connected, setConnected] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showPowers, setShowPowers] = useState(false);
   const [unlockedAchievements, setUnlockedAchievements] = useState<
     Achievement[]
   >([]);
@@ -343,6 +345,27 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
       if (result.unlocked.length > 0) {
         setUnlockedAchievements((prev) => [...prev, ...result.unlocked]);
       }
+      // Cloud sync best-effort. Si no hay sesión, no pasa nada.
+      const session = loadSession();
+      if (session) {
+        const allUnlocked = (() => {
+          try {
+            const raw = window.localStorage.getItem(
+              "naulpong:achievements:v1",
+            );
+            return raw ? (JSON.parse(raw) as string[]) : [];
+          } catch {
+            return [];
+          }
+        })();
+        apiPushStats(
+          session.token,
+          result.newStats,
+          allUnlocked as never,
+        ).catch(() => {
+          /* offline ok */
+        });
+      }
     }
   }
 
@@ -398,57 +421,73 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
     return "SALA PRIVADA";
   })();
 
+  const leftEffects = state ? activeEffects(state, "left") : [];
+  const rightEffects = state ? activeEffects(state, "right") : [];
+  const finished = state?.phase === "FINISHED";
+
   return (
-    <div className="flex w-full flex-col items-center gap-3">
+    <div className="flex w-full flex-col items-center gap-2 sm:gap-3">
       <AchievementToast
         achievements={unlockedAchievements}
         onDone={(id) =>
           setUnlockedAchievements((prev) => prev.filter((a) => a.id !== id))
         }
       />
-      <div className="flex w-full max-w-[960px] items-center justify-between gap-3 px-1">
+
+      {/* Top bar — compacto, una sola fila en mobile */}
+      <div className="flex w-full max-w-[960px] items-center justify-between gap-2 px-1">
         <Link
           href="/"
-          className="font-press text-[10px] tracking-widest text-white/50 hover:text-white"
+          className="font-press flex items-center gap-1 text-[10px] tracking-widest text-white/55 hover:text-white"
+          aria-label="Volver al menú"
         >
-          ← MENÚ
+          <span aria-hidden>←</span>
+          <span className="hidden sm:inline">MENÚ</span>
         </Link>
-        <div className="font-press flex items-center gap-3 text-[9px] tracking-widest text-white/60 sm:text-[10px]">
-          <span className="rounded border border-white/15 bg-black/40 px-2 py-1 text-white/60">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <span className="pixel-pill" title={modeLabel}>
             {modeLabel}
           </span>
           {mode !== "bot" && (
             <button
               onClick={copyLink}
-              className="glow-cyan rounded border border-[var(--neon-cyan)]/60 px-2 py-1 hover:bg-[var(--neon-cyan)]/10"
+              className="pixel-pill"
+              style={{
+                color: "var(--neon-cyan)",
+                borderColor: "rgba(92,255,224,0.55)",
+              }}
+              aria-label={`Copiar link de la sala ${code}`}
             >
               {copied ? "¡COPIADO!" : `SALA ${code}`}
             </button>
           )}
         </div>
         <span
-          className={`font-press text-[10px] tracking-widest ${
-            connected ? "text-[var(--neon-green)]" : "text-white/40"
-          }`}
+          className={`pixel-pill ${connected ? "" : "opacity-60"}`}
+          style={{
+            color: connected ? "var(--neon-green)" : "rgba(255,255,255,0.5)",
+            borderColor: connected
+              ? "rgba(92,255,138,0.55)"
+              : "rgba(255,255,255,0.18)",
+          }}
         >
-          {connected ? "● ONLINE" : "○ OFFLINE"}
+          {connected ? "● ON" : "○ OFF"}
         </span>
       </div>
 
-      {/* HUD */}
-      <div className="flex w-full max-w-[960px] items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 backdrop-blur-sm">
+      {/* HUD compacto: portraits + scores + VS */}
+      <div className="pixel-frame flex w-full max-w-[960px] items-center justify-between gap-2 px-2 py-2 sm:px-3">
         <PlayerCard
           ch={leftCh}
           nick={state?.nicks?.left ?? ""}
           score={state?.scores.left ?? 0}
           you={you === "left"}
-          paddleEffects={state ? activeEffects(state, "left") : []}
         />
-        <div className="font-press flex flex-col items-center justify-center px-2 text-center">
-          <div className="text-[9px] tracking-widest text-white/40 sm:text-[10px]">
+        <div className="font-press flex flex-col items-center justify-center px-1 text-center">
+          <div className="text-[8px] tracking-widest text-white/40 sm:text-[10px]">
             {phaseLabel}
           </div>
-          <div className="font-vt text-[20px] leading-none text-white/60 sm:text-2xl">
+          <div className="font-vt text-[18px] leading-none text-white/60 sm:text-2xl">
             VS
           </div>
         </div>
@@ -457,77 +496,184 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
           nick={state?.nicks?.right ?? ""}
           score={state?.scores.right ?? 0}
           you={you === "right"}
-          paddleEffects={state ? activeEffects(state, "right") : []}
           right
         />
       </div>
 
-      {/* Game canvas */}
-      <div
-        ref={surfaceRef}
-        className="w-full max-w-[960px] touch-none select-none"
-        style={{ cursor: "grab" }}
-      >
-        <GameCanvas state={state} you={you} />
-      </div>
+      {/* Game canvas + overlays */}
+      <div className="relative w-full max-w-[960px]">
+        <div
+          ref={surfaceRef}
+          className="touch-none select-none"
+          style={{ cursor: "grab" }}
+        >
+          <GameCanvas state={state} you={you} />
+        </div>
 
-      {/* Bottom panel */}
-      <div className="font-press flex w-full max-w-[960px] flex-wrap items-center justify-center gap-3 rounded-lg border border-white/10 bg-black/40 px-3 py-3 text-center text-[10px] tracking-wider text-white/70 backdrop-blur-sm">
-        {state?.phase === "WAITING" && mode !== "bot" && (
-          <span>
-            COMPARTÍ EL CÓDIGO{" "}
-            <span className="glow-cyan">{code}</span>{" "}
-            PARA QUE ENTRE TU RIVAL.
-          </span>
+        {/* Power chips flotantes encima del canvas */}
+        {leftEffects.length > 0 && (
+          <div
+            className="pointer-events-none absolute left-2 top-2 flex max-w-[45%] flex-wrap gap-1"
+            aria-label="Poderes activos jugador izquierdo"
+          >
+            {leftEffects.map((e, i) => (
+              <span key={`L-${i}`} className="power-chip">
+                {e}
+              </span>
+            ))}
+          </div>
         )}
-        {state?.phase === "WAITING" && mode === "bot" && (
-          <span className="opacity-80">PREPARANDO BOT…</span>
+        {rightEffects.length > 0 && (
+          <div
+            className="pointer-events-none absolute right-2 top-2 flex max-w-[45%] flex-wrap justify-end gap-1"
+            aria-label="Poderes activos jugador derecho"
+          >
+            {rightEffects.map((e, i) => (
+              <span key={`R-${i}`} className="power-chip">
+                {e}
+              </span>
+            ))}
+          </div>
         )}
-        {playing && (
-          <span className="opacity-80">
-            DESLIZÁ EN LA CANCHA &nbsp;·&nbsp; ↑/↓ O W/S EN TECLADO
-          </span>
-        )}
-        {state?.phase === "FINISHED" && (
-          <div className="flex flex-col items-center gap-3">
-            <div className="text-[12px] tracking-widest">
-              {state.winner === you
-                ? "¡GANASTE!"
-                : you === "spectator"
-                  ? "PARTIDA TERMINADA"
-                  : "PERDISTE"}
+
+        {/* Hint de drag — solo cuando no se está jugando */}
+        {state &&
+          (state.phase === "WAITING" || state.phase === "COUNTDOWN") &&
+          you !== "spectator" && (
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center"
+              aria-hidden
+            >
+              <span className="drag-pulse pixel-pill text-[8px] sm:text-[9px]">
+                ↕ DESLIZÁ PARA MOVER ↕
+              </span>
             </div>
-            <div className="flex gap-3">
-              <button className="btn-arcade yellow" onClick={rematch}>
-                REVANCHA
-              </button>
-              <Link href="/" className="btn-arcade pink">
-                MENÚ
-              </Link>
-            </div>
-            {state.rematchVotes && mode !== "bot" && (
-              <div className="text-[8px] tracking-widest opacity-50">
-                {state.rematchVotes.left ? "✓" : "○"} P1 &nbsp;·&nbsp;
-                {state.rematchVotes.right ? "✓" : "○"} P2
+          )}
+
+        {/* Botón flotante "?" — abre la leyenda de poderes */}
+        <button
+          type="button"
+          onClick={() => setShowPowers(true)}
+          className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[var(--neon-yellow)] bg-black/70 font-press text-[14px] text-[var(--neon-yellow)] shadow-[0_0_10px_rgba(255,217,92,0.55)] transition hover:bg-[var(--neon-yellow)]/15 active:translate-y-[1px]"
+          aria-label="Ver lista de poderes"
+        >
+          ?
+        </button>
+
+        {/* Overlay FINISHED a pantalla del canvas */}
+        {finished && state && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
+            <div className="pixel-frame mx-3 flex max-w-sm flex-col items-center gap-4 px-5 py-5 text-center sm:gap-5 sm:px-7 sm:py-6">
+              {you === "spectator" ? (
+                <p className="font-press text-base tracking-widest text-white/80">
+                  PARTIDA
+                  <br />
+                  TERMINADA
+                </p>
+              ) : state.winner === you ? (
+                <>
+                  <span className="crown-bob text-3xl sm:text-4xl" aria-hidden>
+                    👑
+                  </span>
+                  <p
+                    className="pixel-headline glow-yellow"
+                    style={{ color: "var(--neon-yellow)" }}
+                  >
+                    ¡GANASTE!
+                  </p>
+                  <p className="font-press text-[9px] tracking-widest text-white/55">
+                    {state.scores.left} - {state.scores.right}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl sm:text-4xl" aria-hidden>
+                    💀
+                  </span>
+                  <p
+                    className="pixel-headline glow-pink"
+                    style={{ color: "var(--neon-pink)" }}
+                  >
+                    PERDISTE
+                  </p>
+                  <p className="font-press text-[9px] tracking-widest text-white/55">
+                    {state.scores.left} - {state.scores.right}
+                  </p>
+                </>
+              )}
+              <div className="flex w-full flex-col gap-3">
+                <button className="btn-chunky yellow" onClick={rematch}>
+                  🔁 REVANCHA
+                </button>
+                <Link href="/" className="btn-chunky pink text-center">
+                  🏠 MENÚ
+                </Link>
               </div>
-            )}
+              {state.rematchVotes && mode !== "bot" && (
+                <div className="font-press text-[8px] tracking-widest text-white/40">
+                  {state.rematchVotes.left ? "✓" : "○"} P1 · {" "}
+                  {state.rematchVotes.right ? "✓" : "○"} P2
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      <details className="font-press w-full max-w-[960px] rounded border border-white/10 bg-black/30 p-2 text-[9px] text-white/60">
-        <summary className="cursor-pointer">PODERES (clic para abrir)</summary>
-        <ul className="mt-2 grid grid-cols-2 gap-1 sm:grid-cols-4">
-          {Object.entries(POWER_LABELS).map(([id, label]) => (
-            <li key={id} className="flex items-center gap-2">
-              <span className="text-base">
-                {POWER_EMOJIS[id as keyof typeof POWER_EMOJIS]}
-              </span>
-              <span>{label}</span>
-            </li>
-          ))}
-        </ul>
-      </details>
+      {/* Help text bar — solo en estados no-PLAYING */}
+      {!playing && !finished && (
+        <div className="font-press flex w-full max-w-[960px] items-center justify-center gap-2 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-center text-[9px] tracking-wider text-white/70 sm:text-[10px]">
+          {state?.phase === "WAITING" && mode !== "bot" && (
+            <span>
+              COMPARTÍ EL CÓDIGO{" "}
+              <span className="glow-cyan">{code}</span> CON TU RIVAL.
+            </span>
+          )}
+          {state?.phase === "WAITING" && mode === "bot" && (
+            <span className="opacity-80">PREPARANDO BOT…</span>
+          )}
+        </div>
+      )}
+
+      {/* Modal de poderes */}
+      {showPowers && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+          onClick={() => setShowPowers(false)}
+        >
+          <div
+            className="pixel-frame relative w-full max-w-md p-4 sm:p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-press glow-yellow text-xs tracking-widest sm:text-sm">
+                LOS 8 PODERES
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowPowers(false)}
+                className="font-press flex h-7 w-7 items-center justify-center rounded border border-white/30 text-[12px] text-white/80 transition hover:bg-white/10"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+            <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2">
+              {Object.entries(POWER_LABELS).map(([id, label]) => (
+                <li
+                  key={id}
+                  className="flex items-center gap-2 rounded-md border border-white/10 bg-black/30 px-2 py-2 font-press text-[9px] tracking-wider text-white/80"
+                >
+                  <span className="text-lg">
+                    {POWER_EMOJIS[id as keyof typeof POWER_EMOJIS]}
+                  </span>
+                  <span>{label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -553,14 +699,12 @@ function PlayerCard({
   nick,
   score,
   you,
-  paddleEffects,
   right,
 }: {
   ch: { id: CharacterId; name: string; color: string; emoji: string } | null;
   nick: string;
   score: number;
   you: boolean;
-  paddleEffects: string[];
   right?: boolean;
 }) {
   if (!ch) {
@@ -573,12 +717,12 @@ function PlayerCard({
   const display = nick || (you ? "VOS" : right ? "P2" : "P1");
   return (
     <div
-      className={`flex flex-1 items-center gap-3 ${
+      className={`flex flex-1 items-center gap-2 sm:gap-3 ${
         right ? "flex-row-reverse text-right" : ""
       }`}
     >
       <div
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md sm:h-16 sm:w-16"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md sm:h-16 sm:w-16"
         style={{
           background:
             "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.55))",
@@ -592,7 +736,7 @@ function PlayerCard({
         className={`flex min-w-0 flex-col ${right ? "items-end" : "items-start"}`}
       >
         <div
-          className="font-press truncate text-[9px] tracking-widest sm:text-[10px]"
+          className="font-press max-w-[110px] truncate text-[8px] tracking-widest sm:max-w-[200px] sm:text-[10px]"
           style={{ color: ch.color }}
           title={display}
         >
@@ -600,20 +744,15 @@ function PlayerCard({
           {you ? " · TÚ" : ""}
         </div>
         <div
-          className="font-press mt-0.5 max-w-[140px] truncate text-[7px] tracking-wider opacity-60 sm:max-w-[200px] sm:text-[8px]"
+          className="font-press mt-0.5 hidden max-w-[140px] truncate text-[7px] tracking-wider opacity-60 sm:block sm:max-w-[200px] sm:text-[8px]"
           style={{ color: ch.color }}
           title={ch.name}
         >
           {ch.name}
         </div>
-        <div className="font-press mt-1 text-3xl leading-none text-white sm:text-4xl">
+        <div className="font-press mt-0.5 text-2xl leading-none text-white sm:mt-1 sm:text-4xl">
           {score}
         </div>
-        {paddleEffects.length > 0 && (
-          <div className="mt-1 text-base sm:text-lg">
-            {paddleEffects.join(" ")}
-          </div>
-        )}
       </div>
     </div>
   );

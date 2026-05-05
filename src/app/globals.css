@@ -28,6 +28,19 @@ body {
   overflow-x: hidden;
 }
 
+/* iOS safe-area helpers — usados para que el bottom nav y los botones
+   no queden tapados por el notch/home-indicator. */
+.safe-pt {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.has-bottom-nav {
+  /* alto del bottom nav (~64px) + safe area */
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
 body.crt-screen {
   background:
     radial-gradient(ellipse at top, #1c0a40 0%, #050414 60%) fixed,
@@ -203,6 +216,254 @@ body.crt-screen {
     0 0 16px rgba(255, 217, 92, 0.45);
 }
 
+/* Chunky pixel-art button — borde grueso con "hard shadow" tipo NES.
+   Manteniendo el neón actual pero con presencia visual más grande,
+   ideal para CTAs principales en mobile. */
+.btn-chunky {
+  font-family: var(--press);
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  line-height: 1.1;
+  padding: 16px 18px;
+  min-height: 56px;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  color: var(--neon-cyan);
+  background: linear-gradient(
+    180deg,
+    rgba(92, 255, 224, 0.16),
+    rgba(92, 255, 224, 0.04) 60%,
+    rgba(0, 0, 0, 0.55)
+  );
+  border: 3px solid var(--neon-cyan);
+  border-radius: 6px;
+  text-shadow: 0 0 6px rgba(92, 255, 224, 0.55);
+  box-shadow:
+    inset 0 0 18px rgba(92, 255, 224, 0.18),
+    0 4px 0 0 rgba(92, 255, 224, 0.55),
+    0 0 16px rgba(92, 255, 224, 0.3);
+  transition:
+    transform 80ms ease,
+    box-shadow 120ms ease,
+    background 160ms ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-chunky:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    rgba(92, 255, 224, 0.24),
+    rgba(92, 255, 224, 0.06) 60%,
+    rgba(0, 0, 0, 0.55)
+  );
+  box-shadow:
+    inset 0 0 22px rgba(92, 255, 224, 0.26),
+    0 4px 0 0 rgba(92, 255, 224, 0.7),
+    0 0 22px rgba(92, 255, 224, 0.55);
+}
+
+.btn-chunky:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 0 22px rgba(92, 255, 224, 0.32),
+    0 1px 0 0 rgba(92, 255, 224, 0.55),
+    0 0 14px rgba(92, 255, 224, 0.5);
+}
+
+.btn-chunky:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-chunky.pink {
+  color: var(--neon-pink);
+  border-color: var(--neon-pink);
+  text-shadow: 0 0 6px rgba(255, 92, 209, 0.55);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 92, 209, 0.16),
+    rgba(255, 92, 209, 0.04) 60%,
+    rgba(0, 0, 0, 0.55)
+  );
+  box-shadow:
+    inset 0 0 18px rgba(255, 92, 209, 0.18),
+    0 4px 0 0 rgba(255, 92, 209, 0.55),
+    0 0 16px rgba(255, 92, 209, 0.3);
+}
+.btn-chunky.pink:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 92, 209, 0.24),
+    rgba(255, 92, 209, 0.06) 60%,
+    rgba(0, 0, 0, 0.55)
+  );
+  box-shadow:
+    inset 0 0 22px rgba(255, 92, 209, 0.26),
+    0 4px 0 0 rgba(255, 92, 209, 0.7),
+    0 0 22px rgba(255, 92, 209, 0.55);
+}
+.btn-chunky.pink:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 22px rgba(255, 92, 209, 0.32),
+    0 1px 0 0 rgba(255, 92, 209, 0.55),
+    0 0 14px rgba(255, 92, 209, 0.5);
+}
+
+.btn-chunky.yellow {
+  color: var(--neon-yellow);
+  border-color: var(--neon-yellow);
+  text-shadow: 0 0 6px rgba(255, 217, 92, 0.55);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 217, 92, 0.18),
+    rgba(255, 217, 92, 0.04) 60%,
+    rgba(0, 0, 0, 0.55)
+  );
+  box-shadow:
+    inset 0 0 18px rgba(255, 217, 92, 0.18),
+    0 4px 0 0 rgba(255, 217, 92, 0.6),
+    0 0 16px rgba(255, 217, 92, 0.3);
+}
+.btn-chunky.yellow:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 217, 92, 0.26),
+    rgba(255, 217, 92, 0.06) 60%,
+    rgba(0, 0, 0, 0.55)
+  );
+  box-shadow:
+    inset 0 0 22px rgba(255, 217, 92, 0.26),
+    0 4px 0 0 rgba(255, 217, 92, 0.75),
+    0 0 22px rgba(255, 217, 92, 0.55);
+}
+.btn-chunky.yellow:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 22px rgba(255, 217, 92, 0.32),
+    0 1px 0 0 rgba(255, 217, 92, 0.55),
+    0 0 14px rgba(255, 217, 92, 0.5);
+}
+
+.btn-chunky.green {
+  color: var(--neon-green);
+  border-color: var(--neon-green);
+  text-shadow: 0 0 6px rgba(92, 255, 138, 0.55);
+  background: linear-gradient(
+    180deg,
+    rgba(92, 255, 138, 0.18),
+    rgba(92, 255, 138, 0.04) 60%,
+    rgba(0, 0, 0, 0.55)
+  );
+  box-shadow:
+    inset 0 0 18px rgba(92, 255, 138, 0.2),
+    0 4px 0 0 rgba(92, 255, 138, 0.6),
+    0 0 16px rgba(92, 255, 138, 0.3);
+}
+.btn-chunky.green:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    rgba(92, 255, 138, 0.26),
+    rgba(92, 255, 138, 0.06) 60%,
+    rgba(0, 0, 0, 0.55)
+  );
+  box-shadow:
+    inset 0 0 22px rgba(92, 255, 138, 0.28),
+    0 4px 0 0 rgba(92, 255, 138, 0.75),
+    0 0 22px rgba(92, 255, 138, 0.55);
+}
+.btn-chunky.green:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 22px rgba(92, 255, 138, 0.32),
+    0 1px 0 0 rgba(92, 255, 138, 0.55),
+    0 0 14px rgba(92, 255, 138, 0.5);
+}
+
+/* CTA gigante (estilo botón principal de Brawl Stars).
+   Usado para "PARTIDA RÁPIDA" en home. */
+.btn-mega {
+  font-family: var(--press);
+  text-transform: uppercase;
+  font-size: 18px;
+  letter-spacing: 0.14em;
+  padding: 22px 18px;
+  min-height: 84px;
+  width: 100%;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #1a0a00;
+  background: linear-gradient(180deg, #ffe88a 0%, #ffb547 50%, #ff8a3d 100%);
+  border: 3px solid #ffd95c;
+  text-shadow:
+    1px 1px 0 rgba(255, 255, 255, 0.45),
+    0 -1px 0 rgba(120, 60, 0, 0.4);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 0 rgba(120, 60, 0, 0.35),
+    0 6px 0 0 #c25a18,
+    0 0 22px rgba(255, 174, 64, 0.55);
+  transition:
+    transform 80ms ease,
+    box-shadow 120ms ease,
+    filter 120ms ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.btn-mega:hover:not(:disabled) {
+  filter: brightness(1.05);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 0 rgba(120, 60, 0, 0.35),
+    0 6px 0 0 #c25a18,
+    0 0 30px rgba(255, 174, 64, 0.75);
+}
+.btn-mega:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 0 rgba(120, 60, 0, 0.35),
+    0 2px 0 0 #c25a18,
+    0 0 18px rgba(255, 174, 64, 0.6);
+}
+.btn-mega:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
+
+/* Frame con look de "ventana" pixel-art para paneles HUD/cards. */
+.pixel-frame {
+  position: relative;
+  background: linear-gradient(180deg, rgba(20, 8, 50, 0.85), rgba(0, 0, 0, 0.7));
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 2px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Píldora pixel para chips pequeños (sala, ping, racha). */
+.pixel-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--press);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
 .input-arcade {
   font-family: var(--press);
   text-transform: uppercase;
@@ -293,4 +554,444 @@ body.crt-screen {
     0 0 16px rgba(255, 217, 92, 0.45),
     inset 0 0 12px rgba(255, 217, 92, 0.15);
   animation: achievement-slide 4.5s ease-out forwards;
+}
+
+/* Bottom navigation — visible en todas las páginas, fija en el bottom.
+   Ofrece accesos rápidos a Perfil / Jugar / Guía. */
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  padding: 0 8px env(safe-area-inset-bottom) 8px;
+  background: linear-gradient(180deg, rgba(10, 8, 32, 0.85), rgba(5, 4, 20, 0.95));
+  border-top: 2px solid rgba(92, 255, 224, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 -4px 24px rgba(92, 255, 224, 0.15);
+}
+
+.bottom-nav-item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  font-family: var(--press);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 120ms ease, transform 80ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item .glyph {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.bottom-nav-item:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.bottom-nav-item.active {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(92, 255, 224, 0.55);
+}
+
+.bottom-nav-item.active .glyph {
+  filter: drop-shadow(0 0 6px rgba(92, 255, 224, 0.6));
+}
+
+.bottom-nav-item:active {
+  transform: translateY(1px);
+}
+
+/* Power chip flotante (chips de poderes activos sobre el canvas). */
+.power-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  font-family: var(--press);
+  font-size: 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+/* Texto pixelado gigante para WIN / LOSE / GOAL en panel FINISHED. */
+.pixel-headline {
+  font-family: var(--press);
+  font-size: 28px;
+  letter-spacing: 0.12em;
+  line-height: 1;
+}
+
+@keyframes drag-pulse {
+  0%, 100% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(-3px);
+  }
+}
+
+.drag-pulse {
+  animation: drag-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes crown-bob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50%      { transform: translateY(-3px) rotate(2deg); }
+}
+
+.crown-bob {
+  animation: crown-bob 1.6s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* ===========================================================
+   V2: app-like, no longer a "web page"
+   =========================================================== */
+
+/* Cuerpo bloqueado a 100dvh y sin scroll horizontal — sensación de app
+   nativa y no de scrolling web. Los main internos manejan su propio scroll. */
+html, body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  overflow-x: hidden;
+}
+
+/* Logo / hero arcade.  Combina título grande con un brillo lateral. */
+.hero-logo {
+  font-family: var(--press);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 0 6px rgba(92, 255, 224, 0.65),
+    0 0 14px rgba(92, 255, 224, 0.4),
+    0 0 28px rgba(255, 92, 138, 0.35);
+}
+
+@keyframes hero-shine {
+  0%, 100% {
+    text-shadow:
+      0 0 6px rgba(92, 255, 224, 0.65),
+      0 0 14px rgba(92, 255, 224, 0.4),
+      0 0 28px rgba(255, 92, 138, 0.35);
+  }
+  50% {
+    text-shadow:
+      0 0 8px rgba(92, 255, 224, 0.85),
+      0 0 22px rgba(92, 255, 224, 0.55),
+      0 0 38px rgba(255, 92, 138, 0.6);
+  }
+}
+
+.hero-logo.shine {
+  animation: hero-shine 3.4s ease-in-out infinite;
+}
+
+/* Mode cards — el "selector de modos" estilo Brawl Stars.
+   Card grande tappable, full-width, hard-shadow + glow lateral por color. */
+.mode-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 3px solid var(--mc-color, var(--neon-cyan));
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 22%, transparent) 0%,
+      rgba(0, 0, 0, 0.65) 55%
+    );
+  color: #fff;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: var(--press);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  transition: transform 80ms ease, box-shadow 120ms ease;
+  box-shadow:
+    inset 0 0 16px color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 22%, transparent),
+    0 4px 0 0 color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 70%, transparent),
+    0 0 18px color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 40%, transparent);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mode-card:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 0 16px color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 22%, transparent),
+    0 1px 0 0 color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 70%, transparent),
+    0 0 18px color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 40%, transparent);
+}
+
+.mode-card .mc-icon {
+  flex: 0 0 56px;
+  height: 56px;
+  width: 56px;
+  border-radius: 6px;
+  border: 2px solid color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 75%, transparent);
+  background:
+    radial-gradient(
+      circle at 30% 25%,
+      color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 35%, transparent) 0%,
+      rgba(0, 0, 0, 0.7) 70%
+    );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  line-height: 1;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 60%, transparent));
+}
+
+.mode-card .mc-title {
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  color: var(--mc-color, var(--neon-cyan));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 55%, transparent);
+}
+
+.mode-card .mc-sub {
+  font-family: var(--vt);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: none;
+  margin-top: 2px;
+}
+
+.mode-card .mc-arrow {
+  margin-left: auto;
+  font-size: 22px;
+  color: var(--mc-color, var(--neon-cyan));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--mc-color, var(--neon-cyan)) 60%, transparent);
+}
+
+/* Mode card destacado (más grande para el modo principal). */
+.mode-card.hero {
+  padding: 18px 18px;
+}
+.mode-card.hero .mc-icon {
+  flex: 0 0 64px;
+  height: 64px;
+  width: 64px;
+  font-size: 34px;
+}
+.mode-card.hero .mc-title {
+  font-size: 16px;
+}
+
+/* Trophy showcase — fila Brawl-style con icono grande + progress bar. */
+.trophy-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 2px solid rgba(255, 217, 92, 0.45);
+  border-radius: 6px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 217, 92, 0.18),
+    rgba(0, 0, 0, 0.6)
+  );
+  box-shadow:
+    inset 0 0 12px rgba(255, 217, 92, 0.18),
+    0 0 12px rgba(255, 217, 92, 0.25);
+}
+
+.trophy-slot .ts-icon {
+  font-size: 26px;
+  filter: drop-shadow(0 0 6px rgba(255, 217, 92, 0.6));
+}
+
+.trophy-slot .ts-num {
+  font-family: var(--press);
+  font-size: 22px;
+  color: var(--neon-yellow);
+  text-shadow: 0 0 8px rgba(255, 217, 92, 0.55);
+  line-height: 1;
+}
+
+.trophy-slot .ts-label {
+  font-family: var(--press);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 3px;
+}
+
+.progress-pixel {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-pixel > .fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--neon-cyan) 0%,
+    var(--neon-yellow) 100%
+  );
+  box-shadow: 0 0 8px rgba(255, 217, 92, 0.55);
+  transition: width 240ms ease;
+}
+
+/* Achievement chip — para la home Brawl-style. */
+.ach-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  font-family: var(--press);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.85);
+  width: 100%;
+}
+
+.ach-chip.unlocked {
+  border-color: rgba(255, 217, 92, 0.55);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 217, 92, 0.2),
+    rgba(0, 0, 0, 0.6)
+  );
+  box-shadow:
+    inset 0 0 12px rgba(255, 217, 92, 0.18),
+    0 0 12px rgba(255, 217, 92, 0.18);
+}
+
+.ach-chip .ach-glyph {
+  font-size: 22px;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
+  flex: 0 0 auto;
+}
+
+.ach-chip.locked .ach-glyph {
+  filter: grayscale(1) brightness(0.6);
+}
+
+/* Onboarding / fullscreen modal arcade. */
+.fs-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top));
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  background: radial-gradient(
+    ellipse at center,
+    rgba(20, 8, 50, 0.92),
+    rgba(0, 0, 0, 0.96)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.fs-modal-card {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(180deg, rgba(20, 8, 50, 0.85), rgba(0, 0, 0, 0.7));
+  border: 3px solid rgba(92, 255, 224, 0.55);
+  border-radius: 8px;
+  padding: 22px 18px;
+  text-align: center;
+  box-shadow:
+    inset 0 0 18px rgba(92, 255, 224, 0.15),
+    0 0 30px rgba(92, 255, 224, 0.25);
+}
+
+/* Landscape gate — overlay "rotá el celu" cuando estamos en portrait. */
+.rotate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(20, 8, 50, 0.96),
+    rgba(0, 0, 0, 0.98)
+  );
+  text-align: center;
+}
+
+.rotate-icon {
+  font-size: 64px;
+  animation: rotate-anim 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(92, 255, 224, 0.6));
+}
+
+@keyframes rotate-anim {
+  0%, 100% { transform: rotate(0deg); }
+  40% { transform: rotate(0deg); }
+  60% { transform: rotate(90deg); }
+  80% { transform: rotate(90deg); }
+}
+
+/* Bottom nav v2: solo iconos, más arcade y discreto. */
+.bottom-nav.v2 {
+  background: linear-gradient(180deg, rgba(10, 8, 32, 0.7), rgba(5, 4, 20, 0.92));
+  border-top: 1px solid rgba(92, 255, 224, 0.25);
+  padding-top: 4px;
+  height: calc(56px + env(safe-area-inset-bottom));
+}
+
+.bottom-nav.v2 .bottom-nav-item {
+  font-size: 0; /* hide text in v2 */
+  gap: 0;
+}
+
+.bottom-nav.v2 .bottom-nav-item .glyph {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* Page wrapper que ocupa la altura visible y centra contenido sin scroll. */
+.app-screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }

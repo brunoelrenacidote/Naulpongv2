@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import AuthButton from "@/components/AuthButton";
 import ProfilePanel from "@/components/ProfilePanel";
 
 export const metadata: Metadata = {
@@ -8,24 +8,18 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
   return (
-    <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col items-center gap-8 px-6 py-10 sm:gap-10 sm:py-14">
-      <header className="flex w-full flex-col items-center gap-2 text-center">
-        <p className="font-press text-[10px] uppercase tracking-[0.4em] text-white/40 sm:text-[11px]">
-          Stats personales
-        </p>
-        <h1 className="title-glow text-4xl leading-none sm:text-5xl">
-          Perfil
+    <main className="has-bottom-nav safe-pt relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col items-center gap-6 px-4 pt-6 sm:gap-10 sm:px-6 sm:pt-10">
+      <header className="flex w-full flex-col items-center gap-1 text-center sm:gap-2">
+        <h1 className="hero-logo shine text-4xl leading-none sm:text-5xl">
+          PERFIL
         </h1>
       </header>
 
       <ProfilePanel />
 
-      <Link
-        href="/"
-        className="font-press text-[10px] tracking-widest text-white/50 hover:text-white"
-      >
-        ← VOLVER
-      </Link>
+      <section className="flex w-full max-w-md flex-col items-center gap-3">
+        <AuthButton />
+      </section>
     </main>
   );
 }

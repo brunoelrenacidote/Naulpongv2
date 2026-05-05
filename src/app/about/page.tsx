@@ -3,7 +3,7 @@ import { POWER_EMOJIS, POWER_LABELS } from "@/lib/game-types";
 
 export default function About() {
   return (
-    <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 px-6 py-12">
+    <main className="has-bottom-nav safe-pt relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-6 px-5 pt-8 sm:px-6 sm:pt-12">
       <h1 className="title-glow text-3xl">CÓMO SE JUEGA</h1>
 
       <section className="font-vt space-y-3 text-lg leading-relaxed text-white/85">
@@ -50,7 +50,7 @@ export default function About() {
         <li>🔑 <b>Unirse con Código</b> — entrás a la sala de un amigo.</li>
       </ul>
 
-      <Link href="/" className="btn-arcade mt-4 self-start">
+      <Link href="/" className="btn-chunky mt-4 max-w-xs self-start">
         ← VOLVER
       </Link>
     </main>
