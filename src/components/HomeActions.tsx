@@ -135,9 +135,9 @@ export default function HomeActions() {
 
   if (mode === "queue") {
     return (
-      <div className="font-press flex flex-col items-center gap-6 text-center">
+      <div className="font-press flex w-full max-w-md flex-col items-center gap-5 text-center">
         <p className="glow-yellow blink text-base sm:text-lg">BUSCANDO RIVAL</p>
-        <p className="font-vt text-3xl text-white sm:text-4xl">
+        <p className="font-vt text-4xl text-white sm:text-5xl">
           {String(Math.floor(elapsed / 60)).padStart(2, "0")}:
           {String(elapsed % 60).padStart(2, "0")}
         </p>
@@ -145,7 +145,7 @@ export default function HomeActions() {
           POSICIÓN EN COLA: {queueState.position} / {queueState.total}
         </p>
         <p className="glow-cyan text-[10px] sm:text-xs">JUGADOR: {nick}</p>
-        <button className="btn-arcade pink" onClick={cancelQueue}>
+        <button className="btn-chunky pink" onClick={cancelQueue}>
           CANCELAR
         </button>
       </div>
@@ -154,36 +154,29 @@ export default function HomeActions() {
 
   if (mode === "bot") {
     return (
-      <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <p className="font-press glow-cyan text-xs">ELEGÍ DIFICULTAD</p>
-        <div className="flex w-full flex-col items-stretch gap-3">
-          <button
-            className="btn-arcade"
-            onClick={() => startBot("easy")}
-          >
-            🟢 FÁCIL
-          </button>
-          <button
-            className="btn-arcade yellow"
-            onClick={() => startBot("medium")}
-          >
-            🟡 MEDIO
-          </button>
-          <button
-            className="btn-arcade pink"
-            onClick={() => startBot("hard")}
-          >
-            🔴 DIFÍCIL
-          </button>
-        </div>
+      <div className="flex w-full max-w-md flex-col items-stretch gap-3">
+        <p className="font-press glow-cyan text-center text-xs">
+          ELEGÍ DIFICULTAD
+        </p>
+        <button className="btn-chunky green" onClick={() => startBot("easy")}>
+          🟢 FÁCIL
+        </button>
+        <button className="btn-chunky yellow" onClick={() => startBot("medium")}>
+          🟡 MEDIO
+        </button>
+        <button className="btn-chunky pink" onClick={() => startBot("hard")}>
+          🔴 DIFÍCIL
+        </button>
         {error && (
-          <p className="font-press glow-pink text-[10px]">! {error}</p>
+          <p className="font-press glow-pink text-center text-[10px]">
+            ! {error}
+          </p>
         )}
         <button
-          className="btn-arcade pink mt-2"
+          className="btn-chunky mt-2"
           onClick={() => setMode("menu")}
         >
-          VOLVER
+          ← VOLVER
         </button>
       </div>
     );
@@ -191,8 +184,10 @@ export default function HomeActions() {
 
   if (mode === "join") {
     return (
-      <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <p className="font-press glow-cyan text-xs">INGRESÁ EL CÓDIGO</p>
+      <div className="flex w-full max-w-md flex-col items-stretch gap-3">
+        <p className="font-press glow-cyan text-center text-xs">
+          INGRESÁ EL CÓDIGO
+        </p>
         <input
           autoFocus
           maxLength={6}
@@ -205,14 +200,16 @@ export default function HomeActions() {
           }}
         />
         {error && (
-          <p className="font-press glow-pink text-[10px]">! {error}</p>
+          <p className="font-press glow-pink text-center text-[10px]">
+            ! {error}
+          </p>
         )}
-        <div className="flex gap-3">
-          <button className="btn-arcade pink" onClick={() => setMode("menu")}>
-            VOLVER
+        <div className="grid grid-cols-2 gap-3">
+          <button className="btn-chunky pink" onClick={() => setMode("menu")}>
+            ← VOLVER
           </button>
-          <button className="btn-arcade" onClick={joinRoom}>
-            ENTRAR
+          <button className="btn-chunky" onClick={joinRoom}>
+            ENTRAR →
           </button>
         </div>
       </div>
@@ -236,16 +233,34 @@ export default function HomeActions() {
           MÁX {NICK_MAX} CARACTERES · A-Z 0-9
         </p>
       </div>
-      <button className="btn-arcade yellow" onClick={startQuickMatch}>
-        ⚡ PARTIDA RÁPIDA
+      <button
+        className="btn-mega"
+        onClick={startQuickMatch}
+        aria-label="Partida rápida"
+      >
+        <span aria-hidden>⚡</span>
+        <span>PARTIDA RÁPIDA</span>
+        <span aria-hidden>⚡</span>
       </button>
-      <button className="btn-arcade" onClick={createRoom}>
-        🎮 CREAR SALA
-      </button>
-      <button className="btn-arcade pink" onClick={() => setMode("join")}>
-        🔑 UNIRSE CON CÓDIGO
-      </button>
-      <button className="btn-arcade" onClick={() => { setError(null); if (ensureNick()) setMode("bot"); }}>
+      <div className="grid grid-cols-2 gap-3">
+        <button className="btn-chunky" onClick={createRoom}>
+          🎮 CREAR
+          <br />
+          SALA
+        </button>
+        <button className="btn-chunky pink" onClick={() => setMode("join")}>
+          🔑 UNIRSE
+          <br />
+          CON CÓDIGO
+        </button>
+      </div>
+      <button
+        className="btn-chunky green"
+        onClick={() => {
+          setError(null);
+          if (ensureNick()) setMode("bot");
+        }}
+      >
         🤖 PRÁCTICA VS BOT
       </button>
       {error && (

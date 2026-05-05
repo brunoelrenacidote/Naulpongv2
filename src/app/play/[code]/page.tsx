@@ -18,7 +18,7 @@ export default function PlayPage({
   const botDifficulty: "easy" | "medium" | "hard" =
     diff === "easy" || diff === "hard" ? diff : "medium";
   return (
-    <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-start px-2 py-2 sm:px-4 sm:py-4">
+    <main className="safe-pt safe-pb relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-start px-2 py-2 sm:px-4 sm:py-4">
       <GameClient
         code={code}
         isHost={searchParams.host === "1"}

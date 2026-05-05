@@ -3,6 +3,7 @@ import { Press_Start_2P, VT323 } from "next/font/google";
 import "./globals.css";
 import MusicToggle from "@/components/MusicToggle";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import BottomNav from "@/components/BottomNav";
 
 const press = Press_Start_2P({
   weight: "400",
@@ -43,6 +44,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: "#0a0a14",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -57,6 +59,7 @@ export default function RootLayout({
         <div className="vignette" aria-hidden />
         <MusicToggle />
         {children}
+        <BottomNav />
         <ServiceWorkerRegister />
       </body>
     </html>
