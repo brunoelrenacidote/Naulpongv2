@@ -36,6 +36,10 @@ export default function BottomNav() {
   // Hide on the in-game route — the game UI needs all available vertical
   // space and has its own top-bar back link.
   if (pathname.startsWith("/play")) return null;
+  // Hide on the lobby (home) — the lobby has its own side-icon column with
+  // the same destinations, plus a big PLAY CTA, and a second nav at the
+  // bottom would crowd it.
+  if (pathname === "/") return null;
 
   return (
     <nav className="bottom-nav v2" aria-label="Navegación principal">

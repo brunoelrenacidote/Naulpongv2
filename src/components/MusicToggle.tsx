@@ -1,9 +1,11 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isMusicOn, setMusicOn } from "@/lib/music";
 
 export default function MusicToggle() {
+  const pathname = usePathname() ?? "/";
   const [on, setOn] = useState(false);
 
   useEffect(() => {
@@ -30,6 +32,10 @@ export default function MusicToggle() {
     setOn(next);
     setMusicOn(next);
   }
+
+  // En el lobby (/) usamos un control de música embebido en el top-right;
+  // este toggle global se oculta para no mostrar dos botones.
+  if (pathname === "/") return null;
 
   return (
     <button
