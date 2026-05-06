@@ -7,7 +7,7 @@ import {
   saveCharacter,
 } from "@/lib/character-storage";
 import type { CharacterId } from "@/lib/game-types";
-import { IconChevronUp } from "./icons";
+import { IconArrowLeft, IconArrowRight } from "./icons";
 
 const ALL: CharacterId[] = ["hijo-fiesta", "clavel"];
 
@@ -22,8 +22,8 @@ const TAGLINE: Record<CharacterId, string> = {
 };
 
 const COLOR: Record<CharacterId, string> = {
-  "hijo-fiesta": "#22d3ee",
-  clavel: "#ff5cd1",
+  "hijo-fiesta": "#00e5ff",
+  clavel: "#ff2e93",
 };
 
 /**
@@ -58,24 +58,34 @@ export default function HeroDisplay() {
       className="hero-display"
       style={{ ["--hero-color" as string]: color }}
     >
-      <button
-        type="button"
-        className="hero-flip"
-        onClick={() => cycle(-1)}
-        aria-label="Personaje anterior"
-      >
-        <IconChevronUp size={20} />
-        <span className="hero-flip-text">CAMBIAR</span>
-      </button>
-
       <div className="hero-podium" aria-hidden>
         <div className="hero-podium-glow" />
         <div className="hero-podium-disc" />
         <div className="hero-podium-rays" />
       </div>
 
-      <div className="hero-character-wrap">
-        <CharacterPreview id={id} scale={7} glow={color} />
+      <div className="hero-stage-row">
+        <button
+          type="button"
+          className="hero-flip prev"
+          onClick={() => cycle(-1)}
+          aria-label="Personaje anterior"
+        >
+          <IconArrowLeft size={20} />
+        </button>
+
+        <div className="hero-character-wrap">
+          <CharacterPreview id={id} scale={9} glow={color} />
+        </div>
+
+        <button
+          type="button"
+          className="hero-flip next"
+          onClick={() => cycle(1)}
+          aria-label="Personaje siguiente"
+        >
+          <IconArrowRight size={20} />
+        </button>
       </div>
 
       <div className="hero-nameplate">

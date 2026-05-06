@@ -16,23 +16,23 @@ const ITEMS: readonly RailItem[] = [
   {
     glyph: (s) => <IconNews size={s} />,
     label: "EVENTOS",
-    color: "#ff7a3d",
+    color: "#ff6a1a",
     badge: "!",
   },
   {
     glyph: (s) => <IconTarget size={s} />,
     label: "MISIONES",
-    color: "#22d3ee",
+    color: "#00e5ff",
   },
   {
     glyph: (s) => <IconCalendar size={s} />,
     label: "TEMPORADA",
-    color: "#a78bfa",
+    color: "#ff2e93",
   },
   {
     glyph: (s) => <IconStore size={s} />,
     label: "TIENDA",
-    color: "#facc15",
+    color: "#ffb800",
   },
 ];
 
@@ -52,29 +52,28 @@ export default function EventsRail() {
   return (
     <div className="events-rail" aria-label="Eventos y misiones">
       {ITEMS.map((it) => {
+        const style = { ["--er-color" as string]: it.color };
         const inner = (
           <>
-            <span
-              className="er-glyph"
-              aria-hidden
-              style={{ ["--er-color" as string]: it.color }}
-            >
-              {it.glyph(22)}
+            <span className="er-glyph" aria-hidden>
+              {it.glyph(20)}
             </span>
             <span className="er-label">{it.label}</span>
             {it.badge && (
-              <span
-                className="er-badge"
-                aria-hidden
-                style={{ ["--er-color" as string]: it.color }}
-              >
+              <span className="er-badge" aria-hidden>
                 {it.badge}
               </span>
             )}
           </>
         );
         return it.href ? (
-          <Link key={it.label} href={it.href} className="events-bubble" aria-label={it.label}>
+          <Link
+            key={it.label}
+            href={it.href}
+            className="events-bubble"
+            aria-label={it.label}
+            style={style}
+          >
             {inner}
           </Link>
         ) : (
@@ -84,6 +83,7 @@ export default function EventsRail() {
             className="events-bubble"
             aria-label={it.label}
             onClick={() => showSoon(it.label)}
+            style={style}
           >
             {inner}
           </button>

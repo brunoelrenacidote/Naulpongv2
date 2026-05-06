@@ -192,6 +192,12 @@ export const IconArrowLeft = (p: Props) => (
   </Base>
 );
 
+export const IconArrowRight = (p: Props) => (
+  <Base {...p}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </Base>
+);
+
 export const IconClose = (p: Props) => (
   <Base {...p}>
     <path d="M18 6 6 18M6 6l12 12" />
