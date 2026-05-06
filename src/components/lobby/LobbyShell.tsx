@@ -235,16 +235,16 @@ export default function LobbyShell() {
 
       {sub === "bot" && (
         <SubOverlay title="VS BOT" onClose={() => setSub("menu")}>
-          <DiffCard color="#22c55e" title="FÁCIL" sub="Tranqui, calentamiento" Icon={IconBot} onClick={() => startBot("easy")} />
-          <DiffCard color="#facc15" title="MEDIO" sub="Te pelea cada bola" Icon={IconBolt} onClick={() => startBot("medium")} />
+          <DiffCard color="#34d399" title="FÁCIL" sub="Tranqui, calentamiento" Icon={IconBot} onClick={() => startBot("easy")} />
+          <DiffCard color="#ffb800" title="MEDIO" sub="Te pelea cada bola" Icon={IconBolt} onClick={() => startBot("medium")} />
           <DiffCard color="#ef4444" title="DIFÍCIL" sub="Casi no falla. Suerte." Icon={IconBot} onClick={() => startBot("hard")} />
         </SubOverlay>
       )}
 
       {sub === "private" && (
         <SubOverlay title="SALA PRIVADA" onClose={() => setSub("menu")}>
-          <DiffCard color="#a78bfa" title="CREAR SALA" sub="Generás un código y se lo pasás a un amigo" Icon={IconUsers} onClick={createRoom} />
-          <DiffCard color="#22d3ee" title="UNIRSE CON CÓDIGO" sub="Entrá a una sala existente" Icon={IconKey} onClick={() => setSub("join")} />
+          <DiffCard color="#ff2e93" title="CREAR SALA" sub="Generás un código y se lo pasás a un amigo" Icon={IconUsers} onClick={createRoom} />
+          <DiffCard color="#00e5ff" title="UNIRSE CON CÓDIGO" sub="Entrá a una sala existente" Icon={IconKey} onClick={() => setSub("join")} />
         </SubOverlay>
       )}
 

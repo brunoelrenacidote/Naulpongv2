@@ -11,20 +11,20 @@ export default function NavBubbles() {
   return (
     <nav className="nav-bubbles" aria-label="Navegación">
       <Link href="/perfil" className="nav-bubble" aria-label="Perfil">
-        <span className="nb-glyph" style={{ ["--nb-color" as string]: "#22d3ee" }} aria-hidden>
-          <IconUser size={20} />
+        <span className="nb-glyph" aria-hidden>
+          <IconUser size={18} />
         </span>
         <span className="nb-label">PERFIL</span>
       </Link>
-      <Link href="/perfil" className="nav-bubble" aria-label="Personajes">
-        <span className="nb-glyph" style={{ ["--nb-color" as string]: "#ff5cd1" }} aria-hidden>
-          <IconUsers size={20} />
+      <Link href="/perfil" className="nav-bubble" aria-label="Heroes">
+        <span className="nb-glyph" aria-hidden>
+          <IconUsers size={18} />
         </span>
-        <span className="nb-label">PERSONAJES</span>
+        <span className="nb-label">HEROES</span>
       </Link>
       <Link href="/about" className="nav-bubble" aria-label="Guía">
-        <span className="nb-glyph" style={{ ["--nb-color" as string]: "#facc15" }} aria-hidden>
-          <IconHelp size={20} />
+        <span className="nb-glyph" aria-hidden>
+          <IconHelp size={18} />
         </span>
         <span className="nb-label">GUÍA</span>
       </Link>
