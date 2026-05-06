@@ -1,9 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Press_Start_2P, VT323 } from "next/font/google";
+import {
+  Inter,
+  Lilita_One,
+  Press_Start_2P,
+  VT323,
+} from "next/font/google";
 import "./globals.css";
-import MusicToggle from "@/components/MusicToggle";
+import "./lobby.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import BottomNav from "@/components/BottomNav";
+import MusicToggle from "@/components/MusicToggle";
+
+// Display font del lobby (chunky, bubbly) y body font moderno. Las del juego
+// (Press Start 2P / VT323) se conservan para que la pantalla de juego
+// mantenga su estética 8-bit.
+const lilita = Lilita_One({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const inter = Inter({
+  weight: ["400", "600", "700", "800"],
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 const press = Press_Start_2P({
   weight: "400",
@@ -54,12 +77,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${press.variable} ${vt.variable} crt-screen min-h-screen`}>
-        <div className="scanlines" aria-hidden />
-        <div className="vignette" aria-hidden />
-        <MusicToggle />
+      <body
+        className={`${lilita.variable} ${inter.variable} ${press.variable} ${vt.variable} app-body min-h-screen`}
+      >
         {children}
         <BottomNav />
+        <MusicToggle />
         <ServiceWorkerRegister />
       </body>
     </html>
