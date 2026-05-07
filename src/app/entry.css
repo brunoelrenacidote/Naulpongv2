@@ -1,0 +1,717 @@
+/* =====================================================================
+   NauLPong — Entry (Splash + Auth Gate). Estilo esports tipo
+   Free Fire / Brawl, con la firma "UdderGames presenta". Reusa los tokens
+   de lobby.css (--bg-pane, --c-cyan, --c-magenta, --clip-hud-both,
+   --shadow-pane). Mobile-first y landscape-friendly.
+   ===================================================================== */
+
+/* Fondo común a splash + gate. Capa fija que no scrollea. */
+.entry-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      120% 80% at 20% 0%,
+      rgba(0, 229, 255, 0.18) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      120% 80% at 80% 100%,
+      rgba(255, 46, 147, 0.18) 0%,
+      transparent 65%
+    ),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-mid) 100%);
+  color: var(--ink);
+  font-family: var(--body);
+}
+
+.entry-stage::before,
+.entry-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* Floor grid sutil. */
+.entry-stage::before {
+  background-image:
+    linear-gradient(transparent 0 calc(100% - 1px), rgba(0, 229, 255, 0.08) 0),
+    linear-gradient(90deg, transparent 0 calc(100% - 1px), rgba(0, 229, 255, 0.05) 0);
+  background-size: 80px 80px, 80px 80px;
+  mask-image: radial-gradient(ellipse at 50% 60%, #000 0%, transparent 75%);
+  opacity: 0.55;
+}
+/* Scanlines. */
+.entry-stage::after {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+}
+
+/* =====================================================================
+   Splash (UdderGames presenta)
+   ===================================================================== */
+.entry-splash {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto auto 1fr;
+  align-items: center;
+  justify-items: center;
+  padding:
+    clamp(16px, 4vh, 28px)
+    clamp(20px, 6vw, 48px)
+    clamp(20px, 4vh, 32px);
+  gap: clamp(8px, 2vh, 18px);
+  text-align: center;
+}
+
+.entry-publisher {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(6px, 1.2vh, 12px);
+  animation: entry-fade-up 600ms ease-out 80ms both;
+}
+.entry-publisher-tag {
+  font-family: var(--display);
+  font-size: clamp(9px, 1.6vh, 12px);
+  letter-spacing: 0.42em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+}
+.entry-publisher-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(8px, 1.5vh, 12px);
+  padding: clamp(8px, 1.6vh, 12px) clamp(16px, 3vw, 22px);
+  background: var(--bg-pane-strong);
+  border: 1px solid var(--line-strong);
+  clip-path: var(--clip-hud-both);
+  box-shadow: var(--shadow-pane);
+  font-family: var(--display);
+  font-size: clamp(18px, 3.6vh, 30px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.entry-publisher-logo .mark {
+  width: clamp(22px, 4vh, 32px);
+  height: clamp(22px, 4vh, 32px);
+  display: inline-grid;
+  place-items: center;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--c-magenta) 0%, var(--c-orange) 100%);
+  color: var(--ink-deep);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+    0 6px 14px rgba(255, 46, 147, 0.45);
+}
+.entry-publisher-logo .mark svg {
+  width: 60%;
+  height: 60%;
+}
+
+.entry-game {
+  grid-row: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2vh, 16px);
+  animation: entry-fade-up 700ms ease-out 280ms both;
+}
+.entry-game-title {
+  font-family: var(--display);
+  font-size: clamp(34px, 9vh, 76px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffffff 0%, var(--c-cyan-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 28px rgba(0, 229, 255, 0.32);
+  line-height: 0.95;
+}
+.entry-game-sub {
+  font-size: clamp(11px, 1.7vh, 13px);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.entry-loader {
+  grid-row: 4;
+  align-self: end;
+  width: min(440px, 70vw);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1vh, 10px);
+  animation: entry-fade-up 700ms ease-out 480ms both;
+}
+.entry-loader-track {
+  position: relative;
+  height: 10px;
+  background: var(--bg-pane);
+  border: 1px solid var(--line-strong);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 8px) 0,
+    100% 100%,
+    8px 100%
+  );
+  overflow: hidden;
+}
+.entry-loader-bar {
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: linear-gradient(
+    90deg,
+    var(--c-cyan) 0%,
+    var(--c-cyan-2) 50%,
+    var(--c-magenta) 100%
+  );
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+  transition: width 80ms linear;
+}
+.entry-loader-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: clamp(10px, 1.5vh, 12px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.entry-loader-meta .tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  max-width: 65%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.entry-loader-meta .tip svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--c-amber);
+}
+
+@keyframes entry-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =====================================================================
+   Auth Gate
+   ===================================================================== */
+.entry-gate {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  width: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding:
+    clamp(14px, 3vh, 24px)
+    clamp(18px, 5vw, 36px)
+    clamp(14px, 3vh, 24px);
+  gap: clamp(10px, 2vh, 18px);
+  animation: entry-fade-up 380ms ease-out both;
+}
+
+.entry-gate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.entry-gate-header .entry-publisher-tag {
+  font-size: clamp(8px, 1.4vh, 10px);
+  letter-spacing: 0.36em;
+}
+.entry-gate-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-size: clamp(15px, 2.4vh, 20px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.entry-gate-brand .mark {
+  width: clamp(20px, 3vh, 26px);
+  height: clamp(20px, 3vh, 26px);
+  border-radius: 6px;
+  display: inline-grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--c-magenta) 0%, var(--c-orange) 100%);
+  color: var(--ink-deep);
+}
+.entry-gate-brand .mark svg {
+  width: 60%;
+  height: 60%;
+}
+
+.entry-gate-body {
+  align-self: center;
+  width: 100%;
+  display: grid;
+  gap: clamp(12px, 2vh, 18px);
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  justify-items: center;
+}
+
+@media (min-width: 900px) {
+  .entry-gate-body {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: clamp(20px, 3vw, 36px);
+    align-items: stretch;
+    justify-items: stretch;
+  }
+}
+
+.entry-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(8px, 1.6vh, 14px);
+  text-align: left;
+  max-width: 540px;
+  width: 100%;
+}
+.entry-hero-eyebrow {
+  font-size: clamp(10px, 1.5vh, 12px);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--c-cyan-2);
+}
+.entry-hero-title {
+  font-family: var(--display);
+  font-size: clamp(28px, 6.5vh, 56px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffffff 0%, var(--c-cyan-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 0.95;
+  text-shadow: 0 0 24px rgba(0, 229, 255, 0.25);
+}
+.entry-hero-desc {
+  font-size: clamp(13px, 1.9vh, 16px);
+  line-height: 1.45;
+  color: var(--ink-soft);
+  max-width: 46ch;
+}
+.entry-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, 1.2vh, 10px);
+  margin-top: 4px;
+}
+.entry-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-pane);
+  border: 1px solid var(--line-strong);
+  clip-path: var(--clip-hud-both);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.entry-hero-pill svg {
+  width: 12px;
+  height: 12px;
+  color: var(--c-cyan-2);
+}
+
+.entry-card {
+  position: relative;
+  background: var(--bg-pane-strong);
+  border: 1px solid var(--line-strong);
+  clip-path: var(--clip-hud-both);
+  box-shadow: var(--shadow-deep);
+  padding: clamp(14px, 2.4vh, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.6vh, 14px);
+  width: 100%;
+  max-width: 460px;
+}
+
+.entry-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  background: var(--bg-pane);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px;
+}
+.entry-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-mute);
+  font-family: var(--display);
+  font-size: clamp(10px, 1.6vh, 12px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 8px 4px;
+  cursor: pointer;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+.entry-tab svg {
+  width: 14px;
+  height: 14px;
+}
+.entry-tab:hover {
+  color: var(--ink);
+}
+.entry-tab.active {
+  background: linear-gradient(180deg, var(--c-cyan) 0%, var(--c-cyan-2) 100%);
+  color: var(--ink-deep);
+  box-shadow: 0 0 0 1px var(--c-cyan-2) inset;
+}
+
+.entry-form {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.4vh, 12px);
+}
+.entry-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.entry-label {
+  font-size: 10px;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.entry-input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  background: var(--bg-pane);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  padding: 10px 12px;
+  font-family: var(--body);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  border-radius: 4px;
+  outline: none;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.entry-input:focus {
+  border-color: var(--c-cyan);
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.25);
+}
+.entry-input::placeholder {
+  color: var(--ink-mute);
+}
+
+.entry-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--c-magenta-2);
+  letter-spacing: 0.06em;
+}
+.entry-error svg {
+  width: 14px;
+  height: 14px;
+}
+
+.entry-cta {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: linear-gradient(180deg, var(--c-cyan) 0%, var(--c-cyan-2) 100%);
+  color: var(--ink-deep);
+  font-family: var(--display);
+  font-size: clamp(12px, 1.8vh, 14px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  border: 0;
+  cursor: pointer;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 12px) 0,
+    100% 100%,
+    12px 100%
+  );
+  box-shadow: var(--shadow-cta);
+  transition:
+    transform 80ms ease,
+    filter 120ms ease;
+}
+.entry-cta:hover {
+  filter: brightness(1.06);
+}
+.entry-cta:active {
+  transform: translateY(1px);
+}
+.entry-cta:disabled {
+  filter: grayscale(0.4) brightness(0.7);
+  cursor: not-allowed;
+}
+.entry-cta svg {
+  width: 16px;
+  height: 16px;
+}
+
+.entry-cta.guest {
+  background: linear-gradient(180deg, var(--c-magenta) 0%, var(--c-orange) 100%);
+  color: var(--ink);
+}
+
+.entry-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.entry-divider::before,
+.entry-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.entry-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.entry-secondary {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  padding: 8px 12px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+.entry-secondary:hover {
+  border-color: var(--c-cyan-2);
+  color: var(--ink);
+}
+.entry-secondary svg {
+  width: 12px;
+  height: 12px;
+}
+
+.entry-stage-foot {
+  position: absolute;
+  bottom: clamp(6px, 1.2vh, 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(9px, 1.3vh, 11px);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* =====================================================================
+   Landscape compacto / Z-Flip cover
+   ===================================================================== */
+@media (max-height: 480px) {
+  .entry-splash {
+    grid-template-rows: auto auto auto auto;
+    padding-block: 10px;
+    gap: 4px;
+  }
+  .entry-publisher-tag {
+    font-size: 9px;
+  }
+  .entry-publisher-logo {
+    padding: 6px 14px;
+    font-size: clamp(14px, 4vh, 22px);
+  }
+  .entry-game-title {
+    font-size: clamp(28px, 12vh, 60px);
+  }
+  .entry-game-sub {
+    font-size: 10px;
+  }
+  .entry-loader {
+    width: min(420px, 86vw);
+  }
+  .entry-loader-track {
+    height: 8px;
+  }
+
+  .entry-gate {
+    padding: 8px clamp(12px, 4vw, 18px) 8px;
+    gap: 6px;
+    grid-template-rows: auto 1fr auto;
+  }
+  .entry-gate-header .entry-publisher-tag,
+  .entry-gate-header .entry-gate-brand {
+    font-size: 11px;
+  }
+  .entry-gate-body {
+    gap: 8px;
+    align-items: stretch;
+  }
+  .entry-hero {
+    gap: 4px;
+    text-align: center;
+    align-items: center;
+  }
+  .entry-hero-eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.32em;
+  }
+  .entry-hero-title {
+    font-size: clamp(20px, 8vh, 30px);
+    letter-spacing: 0.02em;
+  }
+  .entry-hero-desc,
+  .entry-hero-meta {
+    display: none;
+  }
+  .entry-card {
+    padding: 10px 12px;
+    gap: 6px;
+    max-width: 460px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  .entry-tabs {
+    padding: 3px;
+  }
+  .entry-tab {
+    padding: 6px 4px;
+    font-size: 10px;
+  }
+  .entry-form {
+    gap: 6px;
+  }
+  .entry-input {
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+  .entry-label {
+    font-size: 9px;
+  }
+  .entry-cta {
+    padding: 9px 14px;
+    font-size: 11px;
+  }
+  .entry-foot,
+  .entry-divider {
+    display: none;
+  }
+  .entry-stage-foot {
+    display: none;
+  }
+}
+
+/* Cuando además es estrecho (Z-Flip cover), el grid del gate se reorganiza:
+   header + (hero + card lado a lado) + footer, para no scrollear. */
+@media (max-height: 480px) and (min-width: 720px) {
+  .entry-gate-body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+  }
+  .entry-hero {
+    text-align: left;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .entry-hero-title {
+    font-size: clamp(22px, 9vh, 36px);
+  }
+}
+
+@media (max-width: 540px) {
+  .entry-gate-body {
+    align-items: flex-start;
+  }
+  .entry-hero {
+    text-align: center;
+    align-items: center;
+  }
+  .entry-hero-meta {
+    justify-content: center;
+  }
+}
+
+/* Mobile portrait corto: ocultamos pills/desc para que el form quepa sin scroll. */
+@media (max-width: 380px) and (max-height: 700px) {
+  .entry-hero-desc,
+  .entry-hero-meta {
+    display: none;
+  }
+  .entry-stage-foot {
+    display: none;
+  }
+  .entry-gate {
+    padding: 10px clamp(12px, 4vw, 18px) 8px;
+  }
+  .entry-hero-title {
+    font-size: clamp(22px, 8vh, 28px);
+  }
+}
