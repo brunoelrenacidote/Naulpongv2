@@ -20,7 +20,7 @@ export default function PlayPage({
     diff === "easy" || diff === "hard" ? diff : "medium";
   return (
     <LandscapeGate>
-      <main className="safe-pt safe-pb relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-5xl flex-col items-center justify-start px-2 py-2 sm:px-4 sm:py-4">
+      <main className="arena-stage safe-pt safe-pb">
         <GameClient
           code={code}
           isHost={searchParams.host === "1"}

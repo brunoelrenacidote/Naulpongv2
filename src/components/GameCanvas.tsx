@@ -152,14 +152,12 @@ export default function GameCanvas({ state, you }: Props) {
   }, []);
 
   return (
-    <div className="relative w-full">
+    <div className="arena-surface">
       <canvas
         ref={canvasRef}
-        className="pixel-img mx-auto block w-full max-w-[960px] rounded-md border-2 border-[var(--neon-cyan)]"
+        className="pixel-img block h-full w-full rounded-md"
         style={{
           aspectRatio: `${FIELD_W} / ${FIELD_H}`,
-          boxShadow:
-            "0 0 24px rgba(92,255,224,0.4), inset 0 0 30px rgba(92,255,224,0.1)",
           background: "#000",
         }}
       />

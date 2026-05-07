@@ -1,0 +1,1318 @@
+/* =====================================================================
+   NauLPong — Arena (pantalla de juego /play/[code])
+   Mobile-first. Reusa los tokens "Arena Edge" del lobby (--bg-pane,
+   --c-cyan, --c-magenta, --clip-hud-both, etc.). El TABLERO interno
+   (canvas) conserva su look 8-bit; sólo el HUD/marco/rails adoptan el
+   estilo HUD competitivo del lobby.
+   ===================================================================== */
+
+/* Stage que ocupa el viewport con fondo atmosférico estilo lobby. */
+.arena-stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  color: var(--ink);
+  background:
+    radial-gradient(
+      120% 80% at 0% 0%,
+      rgba(0, 229, 255, 0.18) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      120% 80% at 100% 0%,
+      rgba(255, 46, 147, 0.18) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      90% 70% at 50% 100%,
+      rgba(139, 92, 246, 0.18) 0%,
+      transparent 55%
+    ),
+    linear-gradient(180deg, #07091c 0%, #050714 50%, #03040c 100%);
+  isolation: isolate;
+  z-index: 0;
+}
+
+/* Floor grid en perspectiva (igual que el lobby) */
+.arena-stage::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60%;
+  background-image:
+    linear-gradient(to right, rgba(0, 229, 255, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 46, 147, 0.1) 1px, transparent 1px);
+  background-size: 56px 56px, 56px 56px;
+  background-position: center bottom;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.5) 30%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.5) 30%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  transform: perspective(800px) rotateX(60deg) translateY(15%) scale(1.6);
+  transform-origin: 50% 100%;
+  opacity: 0.7;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Scanlines muy sutiles (tope) */
+.arena-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.012) 0 1px,
+    transparent 1px 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* Cuando LandscapeGate muestra su overlay, el stage queda oculto. */
+.arena-stage:has(.fs-modal),
+.arena-stage:has(.rotate-overlay) {
+  background: var(--bg-deep);
+}
+.arena-stage:has(.fs-modal)::before,
+.arena-stage:has(.rotate-overlay)::before,
+.arena-stage:has(.fs-modal)::after,
+.arena-stage:has(.rotate-overlay)::after {
+  display: none;
+}
+
+/* Capa de contenido por encima de los fondos. */
+.arena-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  padding:
+    calc(env(safe-area-inset-top) + 8px)
+    clamp(8px, 2vw, 22px)
+    calc(env(safe-area-inset-bottom) + 8px);
+  gap: 8px;
+  overflow: hidden;
+}
+@media (min-width: 768px) {
+  .arena-content {
+    padding:
+      calc(env(safe-area-inset-top) + 12px)
+      clamp(12px, 3vw, 30px)
+      calc(env(safe-area-inset-bottom) + 12px);
+    gap: 12px;
+  }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-content {
+    padding:
+      calc(env(safe-area-inset-top) + 4px)
+      clamp(6px, 1.5vw, 14px)
+      calc(env(safe-area-inset-bottom) + 4px);
+    gap: 4px;
+  }
+}
+
+/* =====================================================================
+   Marquee superior — agrupa MENÚ · phase · modo · sala · conexión.
+   Estilo HUD del lobby con clip-path y blur.
+   ===================================================================== */
+.arena-marquee {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-pane);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-pane);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  clip-path: var(--clip-hud-both);
+  flex-shrink: 0;
+}
+.arena-marquee::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--c-cyan), var(--c-magenta));
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-marquee {
+    padding: 5px 10px;
+  }
+}
+
+.arena-marquee-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.arena-marquee-side.right {
+  justify-content: flex-end;
+}
+
+.arena-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  border: 1px solid var(--line-strong);
+  background: rgba(0, 0, 0, 0.35);
+  text-decoration: none;
+  transition: all 120ms ease;
+}
+.arena-back:hover {
+  color: var(--ink);
+  border-color: var(--c-cyan);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+}
+.arena-back svg {
+  width: 14px;
+  height: 14px;
+}
+.arena-back-label {
+  display: none;
+}
+@media (min-width: 480px) {
+  .arena-back-label {
+    display: inline;
+  }
+}
+
+/* =====================================================================
+   Chips: phase / mode / room / connection.
+   Look común tipo HUD competitivo.
+   ===================================================================== */
+.arena-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-soft);
+  white-space: nowrap;
+  line-height: 1;
+}
+.arena-chip svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.arena-chip.phase.live {
+  color: var(--c-green);
+  border-color: color-mix(in srgb, var(--c-green) 60%, transparent);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--c-green) 60%, transparent);
+}
+.arena-chip.phase.live::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-green);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.85);
+  animation: arena-blink 1s ease-in-out infinite;
+}
+.arena-chip.phase.countdown {
+  color: var(--c-amber);
+  border-color: color-mix(in srgb, var(--c-amber) 60%, transparent);
+}
+.arena-chip.phase.finished {
+  color: var(--c-magenta);
+  border-color: color-mix(in srgb, var(--c-magenta) 60%, transparent);
+}
+
+.arena-chip.mode {
+  color: var(--c-cyan);
+  border-color: color-mix(in srgb, var(--c-cyan) 50%, transparent);
+}
+
+.arena-chip.room {
+  color: var(--c-cyan);
+  border-color: color-mix(in srgb, var(--c-cyan) 60%, transparent);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.arena-chip.room:hover {
+  background: color-mix(in srgb, var(--c-cyan) 15%, rgba(0, 0, 0, 0.45));
+}
+.arena-chip.room.copied {
+  color: var(--c-amber);
+  border-color: color-mix(in srgb, var(--c-amber) 70%, transparent);
+}
+
+.arena-chip.conn {
+  color: var(--ink-mute);
+}
+.arena-chip.conn.online {
+  color: var(--c-green);
+  border-color: color-mix(in srgb, var(--c-green) 60%, transparent);
+}
+.arena-chip.conn .arena-conn-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-mute);
+  flex-shrink: 0;
+}
+.arena-chip.conn.online .arena-conn-dot {
+  background: var(--c-green);
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.7);
+}
+
+/* Esconde el texto largo en mobile chico, deja sólo iconos. */
+.arena-chip-text {
+  display: inline;
+}
+@media (max-width: 479px) {
+  .arena-chip {
+    padding: 6px 8px;
+    font-size: 10px;
+    gap: 4px;
+    letter-spacing: 0.12em;
+  }
+  .arena-chip-text.hide-xs {
+    display: none;
+  }
+}
+
+@keyframes arena-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* =====================================================================
+   Layout principal: 1 col en mobile, 3 cols (rails + main + rails) en lg.
+   ===================================================================== */
+.arena-grid {
+  position: relative;
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "hud"
+    "main";
+  gap: 8px;
+  min-height: 0;
+  align-items: stretch;
+}
+.arena-grid > .arena-hud-mobile {
+  grid-area: hud;
+}
+.arena-grid > .arena-main {
+  grid-area: main;
+  min-height: 0;
+  min-width: 0;
+}
+.arena-grid > .arena-rail-left,
+.arena-grid > .arena-rail-right {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .arena-grid {
+    grid-template-columns: minmax(220px, 1fr) minmax(0, 3fr) minmax(220px, 1fr);
+    grid-template-areas: "rail-left main rail-right";
+    gap: 14px;
+  }
+  .arena-grid > .arena-hud-mobile {
+    display: none;
+  }
+  .arena-grid > .arena-rail-left {
+    grid-area: rail-left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+  }
+  .arena-grid > .arena-rail-right {
+    grid-area: rail-right;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+  }
+}
+
+/* =====================================================================
+   Panel HUD genérico (rails) — look paneles del lobby.
+   ===================================================================== */
+.arena-panel {
+  position: relative;
+  background: var(--bg-pane);
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 10px 12px 12px;
+  box-shadow: var(--shadow-pane);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  clip-path: var(--clip-hud-both);
+  min-width: 0;
+}
+.arena-panel-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 8px;
+}
+.arena-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--c-amber);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-transform: uppercase;
+}
+.arena-panel-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* =====================================================================
+   Player Card grande (rails de desktop) — portrait + name + score gigante.
+   ===================================================================== */
+.arena-pcard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 12px 14px;
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in srgb, var(--pc-color, var(--c-cyan)) 20%, transparent) 0%,
+      transparent 70%
+    ),
+    var(--bg-pane);
+  border: 1px solid color-mix(in srgb, var(--pc-color, var(--c-cyan)) 55%, transparent);
+  box-shadow:
+    var(--shadow-pane),
+    0 0 18px color-mix(in srgb, var(--pc-color, var(--c-cyan)) 30%, transparent);
+  text-align: center;
+  overflow: hidden;
+  clip-path: var(--clip-hud-both);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.arena-pcard.you::after {
+  content: "TÚ";
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  font-family: var(--body);
+  font-weight: 800;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid color-mix(in srgb, var(--pc-color, var(--c-cyan)) 70%, transparent);
+  color: var(--pc-color, var(--c-cyan));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--pc-color, var(--c-cyan)) 70%, transparent);
+}
+.arena-pcard-portrait {
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(
+      circle at 30% 25%,
+      color-mix(in srgb, var(--pc-color, var(--c-cyan)) 30%, transparent) 0%,
+      rgba(0, 0, 0, 0.7) 70%
+    );
+  border: 2px solid color-mix(in srgb, var(--pc-color, var(--c-cyan)) 65%, transparent);
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--pc-color, var(--c-cyan)) 25%, transparent);
+}
+.arena-pcard-name {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arena-pcard-character {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--pc-color, var(--c-cyan)) 80%, white);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arena-pcard-score {
+  font-family: var(--display);
+  font-size: 56px;
+  line-height: 1;
+  color: var(--ink);
+  text-shadow:
+    0 0 10px color-mix(in srgb, var(--pc-color, var(--c-cyan)) 70%, transparent),
+    0 0 22px color-mix(in srgb, var(--pc-color, var(--c-cyan)) 35%, transparent);
+}
+
+/* Buff chips (poderes activos) — fila horizontal en player card desktop. */
+.arena-buffs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.arena-buff {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  animation: arena-buff-pulse 1.4s ease-in-out infinite;
+}
+.arena-buff svg {
+  width: 16px;
+  height: 16px;
+}
+@keyframes arena-buff-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 14px rgba(255, 184, 0, 0.45);
+  }
+}
+.arena-buffs-empty {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--ink-mute);
+  text-align: center;
+}
+
+/* =====================================================================
+   Mobile HUD compacto: VS + dos player cards horizontales.
+   ===================================================================== */
+.arena-hud-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-pane);
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-pane);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  clip-path: var(--clip-hud-both);
+  flex-shrink: 0;
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-hud-mobile {
+    padding: 4px 8px;
+  }
+}
+.arena-hud-vs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+.arena-hud-vs-label {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  color: var(--ink-mute);
+  line-height: 1;
+}
+.arena-hud-vs-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--c-cyan) 35%, transparent),
+    color-mix(in srgb, var(--c-magenta) 35%, transparent)
+  );
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+.arena-hud-vs-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.arena-pcard-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.arena-pcard-compact.right {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.arena-pcard-compact .arena-pcard-portrait {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+@media (min-width: 480px) {
+  .arena-pcard-compact .arena-pcard-portrait {
+    width: 48px;
+    height: 48px;
+  }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-pcard-compact .arena-pcard-portrait {
+    width: 34px;
+    height: 34px;
+  }
+}
+.arena-pcard-compact-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.arena-pcard-compact.right .arena-pcard-compact-info {
+  align-items: flex-end;
+}
+.arena-pcard-compact-name {
+  font-family: var(--display);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--pc-color, var(--c-cyan));
+  text-shadow: 0 0 6px color-mix(in srgb, var(--pc-color, var(--c-cyan)) 50%, transparent);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 480px) {
+  .arena-pcard-compact-name {
+    font-size: 14px;
+  }
+}
+.arena-pcard-compact-score {
+  font-family: var(--display);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--pc-color, var(--c-cyan)) 50%, transparent);
+}
+@media (min-width: 480px) {
+  .arena-pcard-compact-score {
+    font-size: 32px;
+  }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-pcard-compact-name {
+    font-size: 11px;
+  }
+  .arena-pcard-compact-score {
+    font-size: 22px;
+  }
+}
+
+/* =====================================================================
+   Columna principal — frame del canvas.
+   ===================================================================== */
+.arena-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+}
+@media (min-width: 1024px) {
+  .arena-main {
+    gap: 12px;
+  }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-main {
+    gap: 4px;
+  }
+}
+
+/* Frame del canvas: padding + esquinas HUD + halo neon. */
+.arena-frame {
+  position: relative;
+  width: 100%;
+  /* Aspect ratio igual al canvas (16:9) — el frame envuelve sin
+     deformar y no introduce relleno extra. */
+  aspect-ratio: 16 / 9;
+  /* Cap el ancho según la altura disponible para que la cancha
+     nunca exceda el viewport vertical. */
+  max-width: min(100%, calc((100dvh - 200px) * 16 / 9));
+  padding: 8px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-pane-strong) 80%, transparent),
+    color-mix(in srgb, var(--bg-pane) 80%, transparent)
+  );
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.55),
+    0 0 24px rgba(0, 229, 255, 0.18),
+    0 0 48px rgba(255, 46, 147, 0.12);
+}
+@media (min-width: 1024px) {
+  .arena-frame {
+    padding: 12px;
+    /* Ajusta el cap considerando rails + márgenes alrededor. */
+    max-width: min(100%, calc((100dvh - 180px) * 16 / 9));
+  }
+}
+@media (max-width: 1023px) {
+  /* En mobile/tablet, el cap se calcula con menos chrome (sin rails). */
+  .arena-frame {
+    max-width: min(100%, calc((100dvh - 150px) * 16 / 9));
+  }
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-frame {
+    padding: 4px;
+    max-width: min(100%, calc((100dvh - 100px) * 16 / 9));
+  }
+}
+
+/* Esquinas HUD del frame (4 brackets) en cyan/magenta. */
+.arena-frame .arena-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
+.arena-frame .arena-corner.tl {
+  top: -1px;
+  left: -1px;
+  border-top: 3px solid var(--c-cyan);
+  border-left: 3px solid var(--c-cyan);
+  border-top-left-radius: 12px;
+  filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.6));
+}
+.arena-frame .arena-corner.tr {
+  top: -1px;
+  right: -1px;
+  border-top: 3px solid var(--c-magenta);
+  border-right: 3px solid var(--c-magenta);
+  border-top-right-radius: 12px;
+  filter: drop-shadow(0 0 4px rgba(255, 46, 147, 0.6));
+}
+.arena-frame .arena-corner.bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 3px solid var(--c-magenta);
+  border-left: 3px solid var(--c-magenta);
+  border-bottom-left-radius: 12px;
+  filter: drop-shadow(0 0 4px rgba(255, 46, 147, 0.6));
+}
+.arena-frame .arena-corner.br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 3px solid var(--c-cyan);
+  border-right: 3px solid var(--c-cyan);
+  border-bottom-right-radius: 12px;
+  filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.6));
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-frame .arena-corner {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* Wrapper interno del canvas (recibe gestos): ocupa el contenido del frame. */
+.arena-surface-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+.arena-surface-wrap:active {
+  cursor: grabbing;
+}
+
+/* Surface contenedora del canvas. */
+.arena-surface {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.arena-surface canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Buffs overlay (sólo mobile — encima del canvas). */
+.arena-overlay-buffs {
+  position: absolute;
+  top: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 4;
+  pointer-events: none;
+  flex-wrap: wrap;
+  max-width: 45%;
+}
+.arena-overlay-buffs.left {
+  left: 8px;
+}
+.arena-overlay-buffs.right {
+  right: 8px;
+  justify-content: flex-end;
+}
+@media (min-width: 1024px) {
+  .arena-overlay-buffs {
+    display: none;
+  }
+}
+.arena-overlay-buffs .arena-buff {
+  width: 24px;
+  height: 24px;
+}
+.arena-overlay-buffs .arena-buff svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Drag hint — chip pulsante centrado. */
+.arena-drag-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid color-mix(in srgb, var(--c-cyan) 50%, transparent);
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--c-cyan);
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.5);
+  pointer-events: none;
+  z-index: 4;
+  animation: arena-drag-pulse 1.4s ease-in-out infinite;
+}
+.arena-drag-hint svg {
+  width: 14px;
+  height: 14px;
+}
+@keyframes arena-drag-pulse {
+  0%, 100% {
+    transform: translate(-50%, 0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -3px);
+    opacity: 1;
+  }
+}
+
+/* Botón flotante "?" — abre la leyenda de poderes. */
+.arena-fab {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  color: var(--c-amber);
+  background: rgba(0, 0, 0, 0.75);
+  border: 2px solid var(--c-amber);
+  box-shadow: 0 0 14px rgba(255, 184, 0, 0.5);
+  cursor: pointer;
+  transition: all 120ms ease;
+  z-index: 5;
+}
+.arena-fab svg {
+  width: 18px;
+  height: 18px;
+}
+.arena-fab:hover {
+  background: color-mix(in srgb, var(--c-amber) 18%, rgba(0, 0, 0, 0.6));
+  transform: translateY(-1px);
+}
+.arena-fab:active {
+  transform: translateY(1px);
+}
+@media (min-width: 1024px) {
+  /* En desktop el "?" del rail de poderes ya es accesible — escondemos. */
+  .arena-fab {
+    display: none;
+  }
+}
+
+/* Help bar — fila bajo el canvas con ayudas/contexto. */
+.arena-help-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-pane-soft);
+  border: 1px solid var(--line);
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  width: 100%;
+  max-width: 1100px;
+  flex-shrink: 0;
+}
+.arena-help-bar.cta {
+  border-color: color-mix(in srgb, var(--c-cyan) 40%, transparent);
+  color: var(--ink);
+}
+.arena-help-bar svg {
+  width: 14px;
+  height: 14px;
+}
+.arena-help-bar .arena-help-code {
+  color: var(--c-cyan);
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.4);
+  letter-spacing: 0.24em;
+}
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-help-bar {
+    padding: 4px 8px;
+    font-size: 9px;
+  }
+}
+
+/* Lista de poderes en el rail desktop. */
+.arena-power-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.arena-power-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--line);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  line-height: 1.1;
+  min-width: 0;
+}
+.arena-power-list-item .glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--c-amber);
+}
+.arena-power-list-item .glyph svg {
+  width: 16px;
+  height: 16px;
+}
+.arena-power-list-item .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Controles panel (rail desktop). */
+.arena-controls-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.arena-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+.arena-controls-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.arena-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+}
+.arena-key svg {
+  width: 12px;
+  height: 12px;
+}
+.arena-controls-note {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ink-mute);
+  line-height: 1.4;
+}
+
+/* AchievementToast posicionado en stage. */
+.arena-stage .achievement-toast {
+  z-index: 60;
+}
+
+/* Modal de poderes — overlay full-screen estilo lobby modal. */
+.arena-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(3, 5, 14, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.arena-modal {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-pane-strong);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow-deep);
+  padding: 18px 18px 16px;
+  clip-path: var(--clip-hud-both);
+}
+.arena-modal::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--c-cyan), var(--c-magenta));
+}
+.arena-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.arena-modal-title {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.arena-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--line-strong);
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+.arena-modal-close:hover {
+  color: var(--ink);
+  border-color: var(--c-cyan);
+}
+.arena-modal-close svg {
+  width: 16px;
+  height: 16px;
+}
+.arena-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.arena-modal-grid .arena-power-list-item {
+  font-size: 11px;
+  padding: 8px 10px;
+}
+
+/* Overlay FINISHED dentro del frame — trofeo + score + CTAs. */
+.arena-finished {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(3, 5, 14, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.arena-finished-card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px 18px;
+  background: var(--bg-pane-strong);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow-deep);
+  clip-path: var(--clip-hud-both);
+  text-align: center;
+}
+.arena-finished-card.win {
+  border-color: color-mix(in srgb, var(--c-amber) 70%, transparent);
+}
+.arena-finished-card.lose {
+  border-color: color-mix(in srgb, var(--c-magenta) 70%, transparent);
+}
+.arena-finished-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--c-cyan) 35%, transparent),
+    color-mix(in srgb, var(--c-magenta) 35%, transparent)
+  );
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+.arena-finished-card.win .arena-finished-icon {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--c-amber) 50%, transparent),
+    color-mix(in srgb, var(--c-orange) 50%, transparent)
+  );
+  color: var(--c-amber);
+  box-shadow: 0 0 18px rgba(255, 184, 0, 0.5);
+}
+.arena-finished-card.lose .arena-finished-icon {
+  color: var(--c-magenta);
+  box-shadow: 0 0 18px rgba(255, 46, 147, 0.4);
+}
+.arena-finished-icon svg {
+  width: 32px;
+  height: 32px;
+}
+.arena-finished-headline {
+  font-family: var(--display);
+  font-size: 32px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+.arena-finished-card.win .arena-finished-headline {
+  color: var(--c-amber);
+  text-shadow: 0 0 12px rgba(255, 184, 0, 0.55);
+}
+.arena-finished-card.lose .arena-finished-headline {
+  color: var(--c-magenta);
+  text-shadow: 0 0 12px rgba(255, 46, 147, 0.55);
+}
+.arena-finished-score {
+  font-family: var(--display);
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+}
+.arena-finished-actions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+  margin-top: 4px;
+}
+.arena-finished-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-family: var(--display);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 120ms ease;
+  text-decoration: none;
+}
+.arena-finished-action.primary {
+  background: linear-gradient(180deg, var(--c-amber), var(--c-orange));
+  color: var(--ink-deep);
+  border: none;
+  box-shadow: 0 4px 14px rgba(255, 184, 0, 0.4);
+}
+.arena-finished-action.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(255, 184, 0, 0.55);
+}
+.arena-finished-action.secondary {
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--c-magenta);
+  border: 1px solid color-mix(in srgb, var(--c-magenta) 70%, transparent);
+}
+.arena-finished-action.secondary:hover {
+  background: color-mix(in srgb, var(--c-magenta) 12%, rgba(0, 0, 0, 0.4));
+}
+.arena-finished-action svg {
+  width: 18px;
+  height: 18px;
+}
+.arena-finished-rematch {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+}
+
+/* En landscape muy chico, comprime el card de FIN para que entre. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .arena-finished-card {
+    padding: 12px 14px 12px;
+    max-width: 320px;
+    gap: 8px;
+  }
+  .arena-finished-icon {
+    width: 42px;
+    height: 42px;
+  }
+  .arena-finished-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+  .arena-finished-headline {
+    font-size: 24px;
+  }
+  .arena-finished-score {
+    font-size: 16px;
+  }
+  .arena-finished-action {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
