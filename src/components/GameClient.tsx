@@ -1,8 +1,41 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ComponentType, SVGProps } from "react";
 import Link from "next/link";
 import PartySocket from "partysocket";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Bot,
+  Check,
+  CircleHelp,
+  Crown,
+  Gamepad2,
+  Hourglass,
+  House,
+  KeyRound,
+  Move,
+  Play,
+  RefreshCw,
+  Repeat,
+  Rocket,
+  Ruler,
+  Scissors,
+  Shield,
+  Skull,
+  Snail,
+  Snowflake,
+  Sparkles,
+  Swords,
+  Tornado,
+  Users,
+  Wifi,
+  WifiOff,
+  X as IconX,
+  Zap,
+} from "lucide-react";
 import GameCanvas from "@/components/GameCanvas";
 import CharacterPreview from "@/components/CharacterPreview";
 import AchievementToast from "@/components/AchievementToast";
@@ -11,8 +44,8 @@ import {
   CharacterId,
   FIELD_H,
   GameState,
-  POWER_EMOJIS,
   POWER_LABELS,
+  type PowerId,
   ServerMessage,
   Side,
 } from "@/lib/game-types";
@@ -425,8 +458,23 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
   const rightEffects = state ? activeEffects(state, "right") : [];
   const finished = state?.phase === "FINISHED";
 
+  const phaseClass = (() => {
+    if (!state) return "waiting";
+    switch (state.phase) {
+      case "PLAYING":
+        return "live";
+      case "COUNTDOWN":
+      case "GOAL":
+        return "countdown";
+      case "FINISHED":
+        return "finished";
+      default:
+        return "waiting";
+    }
+  })();
+
   return (
-    <div className="flex w-full flex-col items-center gap-2 sm:gap-3">
+    <div className="arena-content">
       <AchievementToast
         achievements={unlockedAchievements}
         onDone={(id) =>
@@ -434,243 +482,307 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
         }
       />
 
-      {/* Top bar — compacto, una sola fila en mobile */}
-      <div className="flex w-full max-w-[960px] items-center justify-between gap-2 px-1">
-        <Link
-          href="/"
-          className="font-press flex items-center gap-1 text-[10px] tracking-widest text-white/55 hover:text-white"
-          aria-label="Volver al menú"
-        >
-          <span aria-hidden>←</span>
-          <span className="hidden sm:inline">MENÚ</span>
-        </Link>
-        <div className="flex items-center gap-2 overflow-hidden">
-          <span className="pixel-pill" title={modeLabel}>
-            {modeLabel}
+      {/* Marquee superior: MENÚ · phase · mode · sala · conexión */}
+      <div className="arena-marquee">
+        <div className="arena-marquee-side">
+          <Link href="/" className="arena-back" aria-label="Volver al menú">
+            <ArrowLeft aria-hidden focusable="false" />
+            <span className="arena-back-label">MENÚ</span>
+          </Link>
+          <span
+            className={`arena-chip phase ${phaseClass}`}
+            aria-live="polite"
+          >
+            <PhaseIcon phase={state?.phase} />
+            <span className="arena-chip-text hide-xs">{phaseLabel}</span>
+          </span>
+        </div>
+        <div className="arena-marquee-side">
+          <span className="arena-chip mode" title={modeLabel}>
+            <ModeIcon mode={mode} />
+            <span className="arena-chip-text hide-xs">{modeLabel}</span>
           </span>
           {mode !== "bot" && (
             <button
               onClick={copyLink}
-              className="pixel-pill"
-              style={{
-                color: "var(--neon-cyan)",
-                borderColor: "rgba(92,255,224,0.55)",
-              }}
+              className={`arena-chip room ${copied ? "copied" : ""}`}
               aria-label={`Copiar link de la sala ${code}`}
             >
-              {copied ? "¡COPIADO!" : `SALA ${code}`}
+              {copied ? (
+                <Check aria-hidden focusable="false" />
+              ) : (
+                <KeyRound aria-hidden focusable="false" />
+              )}
+              <span className="arena-chip-text">
+                {copied ? "COPIADO" : code}
+              </span>
             </button>
           )}
         </div>
-        <span
-          className={`pixel-pill ${connected ? "" : "opacity-60"}`}
-          style={{
-            color: connected ? "var(--neon-green)" : "rgba(255,255,255,0.5)",
-            borderColor: connected
-              ? "rgba(92,255,138,0.55)"
-              : "rgba(255,255,255,0.18)",
-          }}
-        >
-          {connected ? "● ON" : "○ OFF"}
-        </span>
+        <div className="arena-marquee-side right">
+          <span
+            className={`arena-chip conn ${connected ? "online" : ""}`}
+            aria-label={connected ? "Conectado" : "Desconectado"}
+          >
+            {connected ? (
+              <Wifi aria-hidden focusable="false" />
+            ) : (
+              <WifiOff aria-hidden focusable="false" />
+            )}
+            <span className="arena-chip-text hide-xs">
+              {connected ? "ONLINE" : "OFFLINE"}
+            </span>
+          </span>
+        </div>
       </div>
 
-      {/* HUD compacto: portraits + scores + VS */}
-      <div className="pixel-frame flex w-full max-w-[960px] items-center justify-between gap-2 px-2 py-2 sm:px-3">
-        <PlayerCard
-          ch={leftCh}
-          nick={state?.nicks?.left ?? ""}
-          score={state?.scores.left ?? 0}
-          you={you === "left"}
-        />
-        <div className="font-press flex flex-col items-center justify-center px-1 text-center">
-          <div className="text-[8px] tracking-widest text-white/40 sm:text-[10px]">
-            {phaseLabel}
-          </div>
-          <div className="font-vt text-[18px] leading-none text-white/60 sm:text-2xl">
-            VS
-          </div>
-        </div>
-        <PlayerCard
-          ch={rightCh}
-          nick={state?.nicks?.right ?? ""}
-          score={state?.scores.right ?? 0}
-          you={you === "right"}
-          right
-        />
-      </div>
-
-      {/* Game canvas + overlays */}
-      <div className="relative w-full max-w-[960px]">
-        <div
-          ref={surfaceRef}
-          className="touch-none select-none"
-          style={{ cursor: "grab" }}
-        >
-          <GameCanvas state={state} you={you} />
-        </div>
-
-        {/* Power chips flotantes encima del canvas */}
-        {leftEffects.length > 0 && (
-          <div
-            className="pointer-events-none absolute left-2 top-2 flex max-w-[45%] flex-wrap gap-1"
-            aria-label="Poderes activos jugador izquierdo"
-          >
-            {leftEffects.map((e, i) => (
-              <span key={`L-${i}`} className="power-chip">
-                {e}
-              </span>
-            ))}
-          </div>
-        )}
-        {rightEffects.length > 0 && (
-          <div
-            className="pointer-events-none absolute right-2 top-2 flex max-w-[45%] flex-wrap justify-end gap-1"
-            aria-label="Poderes activos jugador derecho"
-          >
-            {rightEffects.map((e, i) => (
-              <span key={`R-${i}`} className="power-chip">
-                {e}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Hint de drag — solo cuando no se está jugando */}
-        {state &&
-          (state.phase === "WAITING" || state.phase === "COUNTDOWN") &&
-          you !== "spectator" && (
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center"
-              aria-hidden
-            >
-              <span className="drag-pulse pixel-pill text-[8px] sm:text-[9px]">
-                ↕ DESLIZÁ PARA MOVER ↕
-              </span>
+      <div className="arena-grid">
+        {/* HUD compacto (mobile + tablet) */}
+        <div className="arena-hud-mobile">
+          <PlayerCardCompact
+            ch={leftCh}
+            nick={state?.nicks?.left ?? ""}
+            score={state?.scores.left ?? 0}
+            you={you === "left"}
+          />
+          <div className="arena-hud-vs" aria-hidden>
+            <span className="arena-hud-vs-label">VS</span>
+            <div className="arena-hud-vs-icon">
+              <Swords aria-hidden focusable="false" />
             </div>
-          )}
+          </div>
+          <PlayerCardCompact
+            ch={rightCh}
+            nick={state?.nicks?.right ?? ""}
+            score={state?.scores.right ?? 0}
+            you={you === "right"}
+            right
+          />
+        </div>
 
-        {/* Botón flotante "?" — abre la leyenda de poderes */}
-        <button
-          type="button"
-          onClick={() => setShowPowers(true)}
-          className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-[var(--neon-yellow)] bg-black/70 font-press text-[14px] text-[var(--neon-yellow)] shadow-[0_0_10px_rgba(255,217,92,0.55)] transition hover:bg-[var(--neon-yellow)]/15 active:translate-y-[1px]"
-          aria-label="Ver lista de poderes"
-        >
-          ?
-        </button>
+        {/* Rail izquierdo (desktop) — player card grande P1 */}
+        <aside className="arena-rail-left" aria-label="Jugador 1">
+          <PlayerCardTall
+            ch={leftCh}
+            nick={state?.nicks?.left ?? ""}
+            score={state?.scores.left ?? 0}
+            you={you === "left"}
+            buffs={leftEffects}
+          />
+          <ControlsHelpPanel mode={mode} />
+        </aside>
 
-        {/* Overlay FINISHED a pantalla del canvas */}
-        {finished && state && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
-            <div className="pixel-frame mx-3 flex max-w-sm flex-col items-center gap-4 px-5 py-5 text-center sm:gap-5 sm:px-7 sm:py-6">
-              {you === "spectator" ? (
-                <p className="font-press text-base tracking-widest text-white/80">
-                  PARTIDA
-                  <br />
-                  TERMINADA
-                </p>
-              ) : state.winner === you ? (
-                <>
-                  <span className="crown-bob text-3xl sm:text-4xl" aria-hidden>
-                    👑
-                  </span>
-                  <p
-                    className="pixel-headline glow-yellow"
-                    style={{ color: "var(--neon-yellow)" }}
-                  >
-                    ¡GANASTE!
-                  </p>
-                  <p className="font-press text-[9px] tracking-widest text-white/55">
-                    {state.scores.left} - {state.scores.right}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <span className="text-3xl sm:text-4xl" aria-hidden>
-                    💀
-                  </span>
-                  <p
-                    className="pixel-headline glow-pink"
-                    style={{ color: "var(--neon-pink)" }}
-                  >
-                    PERDISTE
-                  </p>
-                  <p className="font-press text-[9px] tracking-widest text-white/55">
-                    {state.scores.left} - {state.scores.right}
-                  </p>
-                </>
+        {/* Columna principal — frame con la cancha */}
+        <section className="arena-main">
+          <div className="arena-frame">
+            <span className="arena-corner tl" aria-hidden />
+            <span className="arena-corner tr" aria-hidden />
+            <span className="arena-corner bl" aria-hidden />
+            <span className="arena-corner br" aria-hidden />
+            <div
+              ref={surfaceRef}
+              className="arena-surface-wrap touch-none select-none"
+            >
+              <GameCanvas state={state} you={you} />
+
+              {/* Buffs overlay (solo mobile) */}
+              {leftEffects.length > 0 && (
+                <div
+                  className="arena-overlay-buffs left"
+                  aria-label="Poderes activos jugador izquierdo"
+                >
+                  {leftEffects.map((e, i) => (
+                    <span
+                      key={`L-${e}-${i}`}
+                      className="arena-buff"
+                      title={POWER_LABELS[e]}
+                    >
+                      <PowerIcon power={e} />
+                    </span>
+                  ))}
+                </div>
               )}
-              <div className="flex w-full flex-col gap-3">
-                <button className="btn-chunky yellow" onClick={rematch}>
-                  🔁 REVANCHA
-                </button>
-                <Link href="/" className="btn-chunky pink text-center">
-                  🏠 MENÚ
-                </Link>
-              </div>
-              {state.rematchVotes && mode !== "bot" && (
-                <div className="font-press text-[8px] tracking-widest text-white/40">
-                  {state.rematchVotes.left ? "✓" : "○"} P1 · {" "}
-                  {state.rematchVotes.right ? "✓" : "○"} P2
+              {rightEffects.length > 0 && (
+                <div
+                  className="arena-overlay-buffs right"
+                  aria-label="Poderes activos jugador derecho"
+                >
+                  {rightEffects.map((e, i) => (
+                    <span
+                      key={`R-${e}-${i}`}
+                      className="arena-buff"
+                      title={POWER_LABELS[e]}
+                    >
+                      <PowerIcon power={e} />
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Drag hint */}
+              {state &&
+                (state.phase === "WAITING" ||
+                  state.phase === "COUNTDOWN") &&
+                you !== "spectator" && (
+                  <span className="arena-drag-hint" aria-hidden>
+                    <Move aria-hidden focusable="false" />
+                    DESLIZÁ
+                  </span>
+                )}
+
+              {/* Botón flotante "?" */}
+              <button
+                type="button"
+                onClick={() => setShowPowers(true)}
+                className="arena-fab"
+                aria-label="Ver lista de poderes"
+              >
+                <CircleHelp aria-hidden focusable="false" />
+              </button>
+
+              {/* Overlay FINISHED */}
+              {finished && state && (
+                <div className="arena-finished">
+                  <div
+                    className={`arena-finished-card ${
+                      you === "spectator"
+                        ? ""
+                        : state.winner === you
+                          ? "win"
+                          : "lose"
+                    }`}
+                  >
+                    {you === "spectator" ? (
+                      <>
+                        <div className="arena-finished-icon">
+                          <Gamepad2 aria-hidden focusable="false" />
+                        </div>
+                        <p className="arena-finished-headline">
+                          PARTIDA
+                          <br />
+                          TERMINADA
+                        </p>
+                        <p className="arena-finished-score">
+                          {state.scores.left} - {state.scores.right}
+                        </p>
+                      </>
+                    ) : state.winner === you ? (
+                      <>
+                        <div className="arena-finished-icon">
+                          <Crown aria-hidden focusable="false" />
+                        </div>
+                        <p className="arena-finished-headline">¡GANASTE!</p>
+                        <p className="arena-finished-score">
+                          {state.scores.left} - {state.scores.right}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="arena-finished-icon">
+                          <Skull aria-hidden focusable="false" />
+                        </div>
+                        <p className="arena-finished-headline">PERDISTE</p>
+                        <p className="arena-finished-score">
+                          {state.scores.left} - {state.scores.right}
+                        </p>
+                      </>
+                    )}
+                    <div className="arena-finished-actions">
+                      <button
+                        type="button"
+                        className="arena-finished-action primary"
+                        onClick={rematch}
+                      >
+                        <Repeat aria-hidden focusable="false" />
+                        REVANCHA
+                      </button>
+                      <Link
+                        href="/"
+                        className="arena-finished-action secondary"
+                      >
+                        <House aria-hidden focusable="false" />
+                        MENÚ
+                      </Link>
+                    </div>
+                    {state.rematchVotes && mode !== "bot" && (
+                      <div className="arena-finished-rematch">
+                        {state.rematchVotes.left ? (
+                          <Check aria-hidden focusable="false" />
+                        ) : (
+                          <span aria-hidden>○</span>
+                        )}{" "}
+                        P1 ·{" "}
+                        {state.rematchVotes.right ? (
+                          <Check aria-hidden focusable="false" />
+                        ) : (
+                          <span aria-hidden>○</span>
+                        )}{" "}
+                        P2
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Help text bar — solo en estados no-PLAYING */}
-      {!playing && !finished && (
-        <div className="font-press flex w-full max-w-[960px] items-center justify-center gap-2 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-center text-[9px] tracking-wider text-white/70 sm:text-[10px]">
-          {state?.phase === "WAITING" && mode !== "bot" && (
-            <span>
-              COMPARTÍ EL CÓDIGO{" "}
-              <span className="glow-cyan">{code}</span> CON TU RIVAL.
-            </span>
-          )}
-          {state?.phase === "WAITING" && mode === "bot" && (
-            <span className="opacity-80">PREPARANDO BOT…</span>
-          )}
-        </div>
-      )}
+          {/* Help bar bajo el canvas — info contextual */}
+          <HelpBar
+            phase={state?.phase}
+            mode={mode}
+            code={code}
+            playing={!!playing}
+            finished={finished}
+          />
+        </section>
+
+        {/* Rail derecho (desktop) — player card grande P2 + leyenda de poderes */}
+        <aside className="arena-rail-right" aria-label="Jugador 2">
+          <PlayerCardTall
+            ch={rightCh}
+            nick={state?.nicks?.right ?? ""}
+            score={state?.scores.right ?? 0}
+            you={you === "right"}
+            buffs={rightEffects}
+          />
+          <PowerLegendPanel onOpenAll={() => setShowPowers(true)} />
+        </aside>
+      </div>
 
       {/* Modal de poderes */}
       {showPowers && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+          className="arena-modal-backdrop"
           onClick={() => setShowPowers(false)}
         >
           <div
-            className="pixel-frame relative w-full max-w-md p-4 sm:p-5"
+            className="arena-modal"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Lista de poderes"
           >
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-press glow-yellow text-xs tracking-widest sm:text-sm">
-                LOS 8 PODERES
-              </p>
+            <div className="arena-modal-header">
+              <span className="arena-modal-title">LOS 8 PODERES</span>
               <button
                 type="button"
                 onClick={() => setShowPowers(false)}
-                className="font-press flex h-7 w-7 items-center justify-center rounded border border-white/30 text-[12px] text-white/80 transition hover:bg-white/10"
+                className="arena-modal-close"
                 aria-label="Cerrar"
               >
-                ✕
+                <IconX aria-hidden focusable="false" />
               </button>
             </div>
-            <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-2">
-              {Object.entries(POWER_LABELS).map(([id, label]) => (
-                <li
-                  key={id}
-                  className="flex items-center gap-2 rounded-md border border-white/10 bg-black/30 px-2 py-2 font-press text-[9px] tracking-wider text-white/80"
-                >
-                  <span className="text-lg">
-                    {POWER_EMOJIS[id as keyof typeof POWER_EMOJIS]}
+            <div className="arena-modal-grid">
+              {(Object.keys(POWER_LABELS) as PowerId[]).map((id) => (
+                <div key={id} className="arena-power-list-item">
+                  <span className="glyph">
+                    <PowerIcon power={id} />
                   </span>
-                  <span>{label}</span>
-                </li>
+                  <span className="label">{POWER_LABELS[id]}</span>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
       )}
@@ -678,30 +790,83 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
   );
 }
 
-function activeEffects(state: GameState, side: Side): string[] {
-  const out: string[] = [];
+function activeEffects(state: GameState, side: Side): PowerId[] {
+  const out: PowerId[] = [];
   const p = state.paddles[side];
-  if (p.shield) out.push("🛡️");
-  if (p.frozenUntil > state.now) out.push("❄️");
-  if (p.invertedUntil > state.now) out.push("🔄");
+  if (p.shield) out.push("shield");
+  if (p.frozenUntil > state.now) out.push("freeze");
+  if (p.invertedUntil > state.now) out.push("invert");
   for (const b of p.activeBuffs) {
-    if (b.power === "paddleXL") out.push("📏");
-    if (b.power === "paddleMini") out.push("🔪");
+    if (b.power === "paddleXL") out.push("paddleXL");
+    if (b.power === "paddleMini") out.push("paddleMini");
   }
   if (state.speedMul !== 1 && state.speedMulUntil > state.now) {
-    out.push("🐢");
+    out.push("slowmo");
   }
   return out;
 }
 
-function PlayerCard({
+const POWER_ICONS: Record<
+  PowerId,
+  ComponentType<SVGProps<SVGSVGElement>>
+> = {
+  slowmo: Snail,
+  paddleXL: Ruler,
+  paddleMini: Scissors,
+  turbo: Rocket,
+  shield: Shield,
+  freeze: Snowflake,
+  curve: Tornado,
+  invert: RefreshCw,
+};
+
+function PowerIcon({
+  power,
+  className,
+}: {
+  power: PowerId;
+  className?: string;
+}) {
+  const Icon = POWER_ICONS[power];
+  return <Icon className={className} aria-hidden focusable="false" />;
+}
+
+function ModeIcon({ mode }: { mode: "quick" | "private" | "bot" }) {
+  if (mode === "bot") return <Bot aria-hidden focusable="false" />;
+  if (mode === "quick") return <Zap aria-hidden focusable="false" />;
+  return <Users aria-hidden focusable="false" />;
+}
+
+function PhaseIcon({ phase }: { phase?: string }) {
+  switch (phase) {
+    case "PLAYING":
+      return <Play aria-hidden focusable="false" />;
+    case "COUNTDOWN":
+      return <Hourglass aria-hidden focusable="false" />;
+    case "GOAL":
+      return <Sparkles aria-hidden focusable="false" />;
+    case "FINISHED":
+      return <Crown aria-hidden focusable="false" />;
+    default:
+      return <Gamepad2 aria-hidden focusable="false" />;
+  }
+}
+
+type CharacterMeta = {
+  id: CharacterId;
+  name: string;
+  color: string;
+  emoji: string;
+} | null;
+
+function PlayerCardCompact({
   ch,
   nick,
   score,
   you,
   right,
 }: {
-  ch: { id: CharacterId; name: string; color: string; emoji: string } | null;
+  ch: CharacterMeta;
   nick: string;
   score: number;
   you: boolean;
@@ -709,51 +874,242 @@ function PlayerCard({
 }) {
   if (!ch) {
     return (
-      <div className="flex flex-1 items-center gap-2">
-        <div className="font-press text-[10px] text-white/40">…</div>
+      <div
+        className={`arena-pcard-compact ${right ? "right" : ""}`}
+        aria-hidden
+      >
+        <div
+          className="arena-pcard-portrait"
+          style={{ ["--pc-color" as string]: "#5cffe0" }}
+        />
+        <div className="arena-pcard-compact-info">
+          <span className="arena-pcard-compact-name opacity-40">…</span>
+          <span className="arena-pcard-compact-score opacity-40">0</span>
+        </div>
       </div>
     );
   }
   const display = nick || (you ? "VOS" : right ? "P2" : "P1");
   return (
     <div
-      className={`flex flex-1 items-center gap-2 sm:gap-3 ${
-        right ? "flex-row-reverse text-right" : ""
-      }`}
+      className={`arena-pcard-compact ${right ? "right" : ""}`}
+      style={{ ["--pc-color" as string]: ch.color }}
     >
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md sm:h-16 sm:w-16"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.55))",
-          border: `1px solid ${ch.color}55`,
-          boxShadow: `inset 0 0 12px ${ch.color}22, 0 0 8px ${ch.color}55`,
-        }}
-      >
+      <div className="arena-pcard-portrait">
         <CharacterPreview id={ch.id} scale={2} glow={ch.color} />
       </div>
-      <div
-        className={`flex min-w-0 flex-col ${right ? "items-end" : "items-start"}`}
-      >
-        <div
-          className="font-press max-w-[110px] truncate text-[8px] tracking-widest sm:max-w-[200px] sm:text-[10px]"
-          style={{ color: ch.color }}
-          title={display}
-        >
+      <div className="arena-pcard-compact-info">
+        <span className="arena-pcard-compact-name" title={display}>
           {display}
           {you ? " · TÚ" : ""}
+        </span>
+        <span className="arena-pcard-compact-score">{score}</span>
+      </div>
+    </div>
+  );
+}
+
+function PlayerCardTall({
+  ch,
+  nick,
+  score,
+  you,
+  buffs,
+}: {
+  ch: CharacterMeta;
+  nick: string;
+  score: number;
+  you: boolean;
+  buffs: PowerId[];
+}) {
+  if (!ch) {
+    return (
+      <div
+        className="arena-pcard"
+        style={{ ["--pc-color" as string]: "#5cffe0" }}
+        aria-hidden
+      >
+        <div className="arena-pcard-portrait" />
+        <div className="arena-pcard-name">…</div>
+        <div className="arena-pcard-score">0</div>
+      </div>
+    );
+  }
+  const display = nick || (you ? "VOS" : "P?");
+  return (
+    <div
+      className={`arena-pcard ${you ? "you" : ""}`}
+      style={{ ["--pc-color" as string]: ch.color }}
+    >
+      <div className="arena-pcard-portrait">
+        <CharacterPreview id={ch.id} scale={3} glow={ch.color} />
+      </div>
+      <div className="arena-pcard-name" title={display}>
+        {display}
+      </div>
+      <div className="arena-pcard-character" title={ch.name}>
+        {ch.name}
+      </div>
+      <div className="arena-pcard-score">{score}</div>
+      <div className="arena-buffs" aria-label="Poderes activos">
+        {buffs.length === 0 ? (
+          <span className="arena-buffs-empty">SIN PODERES</span>
+        ) : (
+          buffs.map((b, i) => (
+            <span
+              key={`${b}-${i}`}
+              className="arena-buff"
+              title={POWER_LABELS[b]}
+            >
+              <PowerIcon power={b} />
+            </span>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ControlsHelpPanel({
+  mode,
+}: {
+  mode: "quick" | "private" | "bot";
+}) {
+  return (
+    <div className="arena-panel" aria-label="Controles">
+      <div className="arena-panel-eyebrow">
+        <span>CONTROLES</span>
+      </div>
+      <div className="arena-controls-rows">
+        <div className="arena-controls-row">
+          <span>SUBIR</span>
+          <span className="arena-controls-keys">
+            <span className="arena-key">
+              <ArrowUp aria-hidden focusable="false" />
+            </span>
+            <span className="arena-key">W</span>
+          </span>
         </div>
-        <div
-          className="font-press mt-0.5 hidden max-w-[140px] truncate text-[7px] tracking-wider opacity-60 sm:block sm:max-w-[200px] sm:text-[8px]"
-          style={{ color: ch.color }}
-          title={ch.name}
-        >
-          {ch.name}
+        <div className="arena-controls-row">
+          <span>BAJAR</span>
+          <span className="arena-controls-keys">
+            <span className="arena-key">
+              <ArrowDown aria-hidden focusable="false" />
+            </span>
+            <span className="arena-key">S</span>
+          </span>
         </div>
-        <div className="font-press mt-0.5 text-2xl leading-none text-white sm:mt-1 sm:text-4xl">
-          {score}
+        <div className="arena-controls-row">
+          <span>TÁCTIL</span>
+          <span className="arena-controls-keys">
+            <span className="arena-key">
+              <Move aria-hidden focusable="false" />
+            </span>
+          </span>
+        </div>
+        <div className="arena-controls-note">
+          {mode === "bot"
+            ? "Bot con dificultad configurable. Primero a 7 gana."
+            : mode === "quick"
+              ? "Partida rápida · matchmaking global. Primero a 7 gana."
+              : "Invitá a un amigo con el código de sala. Primero a 7 gana."}
         </div>
       </div>
     </div>
   );
+}
+
+function PowerLegendPanel({ onOpenAll }: { onOpenAll: () => void }) {
+  const entries = Object.entries(POWER_LABELS) as [PowerId, string][];
+  return (
+    <div className="arena-panel" aria-label="Leyenda de poderes">
+      <div className="arena-panel-eyebrow">
+        <span>PODERES</span>
+        <button
+          type="button"
+          onClick={onOpenAll}
+          className="arena-panel-link"
+          aria-label="Ver detalle de los 8 poderes"
+        >
+          <CircleHelp aria-hidden focusable="false" />
+          VER TODOS
+        </button>
+      </div>
+      <div className="arena-power-list">
+        {entries.map(([id, label]) => (
+          <div key={id} className="arena-power-list-item">
+            <span className="glyph">
+              <PowerIcon power={id} />
+            </span>
+            <span className="label">{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HelpBar({
+  phase,
+  mode,
+  code,
+  playing,
+  finished,
+}: {
+  phase?: string;
+  mode: "quick" | "private" | "bot";
+  code: string;
+  playing: boolean;
+  finished: boolean;
+}) {
+  if (finished) return null;
+
+  if (playing) {
+    return (
+      <div className="arena-help-bar" role="note">
+        <Sparkles aria-hidden focusable="false" />
+        <span>PRIMERO A 7 · TOCÁ EL ORBE PARA ACTIVAR PODERES</span>
+      </div>
+    );
+  }
+
+  if (phase === "WAITING") {
+    if (mode === "bot") {
+      return (
+        <div className="arena-help-bar cta" role="status">
+          <Bot aria-hidden focusable="false" />
+          <span>Preparando bot…</span>
+        </div>
+      );
+    }
+    return (
+      <div className="arena-help-bar cta" role="status">
+        <KeyRound aria-hidden focusable="false" />
+        <span>
+          COMPARTÍ EL CÓDIGO{" "}
+          <span className="arena-help-code">{code}</span> CON TU RIVAL
+        </span>
+      </div>
+    );
+  }
+
+  if (phase === "COUNTDOWN") {
+    return (
+      <div className="arena-help-bar" role="status">
+        <Hourglass aria-hidden focusable="false" />
+        <span>¡A JUGAR EN…!</span>
+      </div>
+    );
+  }
+
+  if (phase === "GOAL") {
+    return (
+      <div className="arena-help-bar" role="status">
+        <Sparkles aria-hidden focusable="false" />
+        <span>¡GOL!</span>
+      </div>
+    );
+  }
+
+  return null;
 }

@@ -7,6 +7,7 @@ import {
 } from "next/font/google";
 import "./globals.css";
 import "./lobby.css";
+import "./arena.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import BottomNav from "@/components/BottomNav";
 import MusicToggle from "@/components/MusicToggle";
