@@ -7,7 +7,7 @@
 // `setMusicOn`, `toggleMusic`) así nada en los componentes cambia.
 
 const TRACK_URL = "/music/lobby-theme.mp3";
-const TARGET_VOLUME = 0.32;
+const TARGET_VOLUME = 0.22;
 const FADE_IN_MS = 600;
 const FADE_OUT_MS = 350;
 

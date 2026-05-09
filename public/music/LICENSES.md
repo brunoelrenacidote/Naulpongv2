@@ -16,30 +16,39 @@ otro mp3. No hace falta tocar código.
 ## Recomendaciones
 
 - Format: `mp3` 128 kbps stereo 44.1 kHz.
-- Length: 1:30 - 3:00 ideal (loopeamos via `audio.loop = true`).
-- Loudness: -16 LUFS / -1.5 dBTP (ya normalizado por ffmpeg `loudnorm`).
+- Length: 1:00 - 3:00 ideal (loopeamos via `audio.loop = true`).
+- Loudness: -16 a -18 LUFS / -1.5 dBTP (ya normalizado por ffmpeg
+  `loudnorm`). Más bajo = más tranqui de fondo.
 - Mejor si los primeros y últimos 100 ms están en silencio o tienen
   fade — `audio.loop = true` no hace crossfade, sólo restart, así que
   un endpoint con energía produce un click audible al loopear.
 
 ## Fuentes actuales
 
-| File             | Source pack                | License | Author     |
-| ---------------- | -------------------------- | ------- | ---------- |
-| `lobby-theme.mp3`| OpenGameArt — "Open Warfare" | CC0   | Ruskerdax  |
+| File             | Source                                            | License | Author    |
+| ---------------- | ------------------------------------------------- | ------- | --------- |
+| `lobby-theme.mp3`| OpenGameArt — "digital evening" (cyberpunk ambient) | CC0   | bluszcz   |
 
-URL: https://opengameart.org/content/open-warfare
+URL: https://opengameart.org/content/digital-evening
 
 CC0 1.0 Universal (Public Domain Dedication). No requiere atribución
 pero se incluye por trackeabilidad / cortesía.
 
 ## Procesamiento aplicado
 
-`open_warfare.mp3` (256 kbps stereo, 1:54.48) →
-`lobby-theme.mp3` (128 kbps stereo, 1:54.62):
+`digital evening.ogg` (94.8 kbps stereo 44.1 kHz, 1:27.27) →
+`lobby-theme.mp3` (128 kbps stereo 44.1 kHz, 1:27.30):
 
 - Re-encode a mp3 128 kbps stereo 44.1 kHz.
-- Loudness-normalised a -16 LUFS / -1.5 dBTP / LRA 11 vía
-  ffmpeg `loudnorm`.
-- Fade-in de 50 ms al inicio + fade-out de 400 ms al final, para que el
+- Loudness-normalised a **-18 LUFS** / -1.5 dBTP / LRA 11 vía
+  ffmpeg `loudnorm` (más bajo que el track anterior `Open Warfare` que
+  estaba en -16 LUFS — el user pidió "más tranqui").
+- Fade-in de 2 s al inicio + fade-out de 2.5 s al final, para que el
   loop al reiniciar no produzca un click audible.
+
+## Histórico
+
+- `Open Warfare` por Ruskerdax (CC0, OpenGameArt) — track inicial post
+  chip-tune. Demasiado intenso de combate para el lobby idle, reemplazado.
+- Chip-tune sintetizado vía osciladores Web Audio — versión inicial.
+  Sonaba 8-bit por construcción.
