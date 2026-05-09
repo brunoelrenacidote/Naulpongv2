@@ -47,16 +47,14 @@ function NickEditor({
   }
 
   return (
-    <section className="flex flex-col items-center gap-2 text-center">
-      <p className="font-press text-[9px] tracking-widest text-white/40">
-        NOMBRE
-      </p>
+    <div className="console-identity">
+      <span className="ident-tag">CALLSIGN</span>
       {editing ? (
         <div className="flex w-full max-w-xs flex-col items-stretch gap-2">
           <input
             autoFocus
             maxLength={12}
-            className="input-arcade text-center"
+            className="console-input"
             value={draft}
             onChange={(e) => setDraft(sanitizeNick(e.target.value))}
             onKeyDown={(e) => {
@@ -67,12 +65,17 @@ function NickEditor({
           />
           <div className="grid grid-cols-2 gap-2">
             <button
-              className="btn-chunky pink"
+              type="button"
+              className="console-btn danger"
               onClick={() => setEditing(false)}
             >
               CANCELAR
             </button>
-            <button className="btn-chunky" onClick={save}>
+            <button
+              type="button"
+              className="console-btn cyan"
+              onClick={save}
+            >
               GUARDAR
             </button>
           </div>
@@ -81,14 +84,13 @@ function NickEditor({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="font-press text-2xl tracking-widest text-[var(--neon-cyan)] transition hover:text-white sm:text-3xl"
-          style={{ textShadow: "0 0 12px rgba(92,255,224,0.45)" }}
+          className="console-nick-btn"
           aria-label="Editar nombre"
         >
           {initial || "—"}
         </button>
       )}
-    </section>
+    </div>
   );
 }
 
@@ -107,9 +109,19 @@ export default function ProfilePanel() {
 
   if (!hydrated || !stats) {
     return (
-      <div className="font-press text-[10px] tracking-widest text-white/40">
-        CARGANDO...
-      </div>
+      <section
+        className="console-panel accent-cyan"
+        style={{ animationDelay: "200ms" } as React.CSSProperties}
+      >
+        <span className="console-panel-tag">{"// LOADING"}</span>
+        <span className="console-panel-bracket tl" aria-hidden />
+        <span className="console-panel-bracket tr" aria-hidden />
+        <span className="console-panel-bracket bl" aria-hidden />
+        <span className="console-panel-bracket br" aria-hidden />
+        <p className="console-prose" aria-live="polite">
+          <span className="hl-cyan">CARGANDO DOSSIER...</span>
+        </p>
+      </section>
     );
   }
 
@@ -117,160 +129,196 @@ export default function ProfilePanel() {
   const totalUnlocked = achievements.filter((a) => unlocked.has(a.id)).length;
 
   return (
-    <div className="flex w-full flex-col gap-6 sm:gap-8">
-      {/* Identity */}
-      <NickEditor
-        initial={nick}
-        onChange={(n) => setNick(n)}
-      />
-
-      {/* Stats grid */}
-      <section className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile label="PARTIDOS" value={String(stats.matches)} />
-        <Tile
-          label="VICTORIAS"
-          value={String(stats.wins)}
-          color="var(--neon-green)"
-        />
-        <Tile
-          label="DERROTAS"
-          value={String(stats.losses)}
-          color="var(--neon-pink)"
-        />
-        <Tile
-          label="% VICTORIA"
-          value={`${winRate(stats)}%`}
-          color="var(--neon-yellow)"
-        />
-        <Tile
-          label="RACHA ACTUAL"
-          value={String(stats.currentStreak)}
-          color="var(--neon-cyan)"
-        />
-        <Tile
-          label="MEJOR RACHA"
-          value={String(stats.bestStreak)}
-          color="var(--neon-yellow)"
-        />
-        <Tile label="GOLES A FAVOR" value={String(stats.goalsFor)} />
-        <Tile label="GOLES EN CONTRA" value={String(stats.goalsAgainst)} />
-        <Tile label="POWER-UPS" value={String(stats.powerUpsTaken)} />
-        <Tile
-          label="SHUTOUTS"
-          value={String(stats.shutoutWins)}
-          color="var(--neon-green)"
-        />
-        <Tile
-          label="MÁS RÁPIDA"
-          value={
-            stats.fastestWinMs == null
-              ? "—"
-              : formatDuration(stats.fastestWinMs)
-          }
-        />
-        <Tile label="TIEMPO TOTAL" value={formatDuration(stats.totalPlayMs)} />
+    <>
+      <section
+        className="console-panel accent-cyan"
+        style={{ animationDelay: "200ms" } as React.CSSProperties}
+      >
+        <span className="console-panel-tag">{"// IDENTITY"}</span>
+        <span className="console-panel-bracket tl" aria-hidden />
+        <span className="console-panel-bracket tr" aria-hidden />
+        <span className="console-panel-bracket bl" aria-hidden />
+        <span className="console-panel-bracket br" aria-hidden />
+        <h2 className="console-panel-title">
+          <span className="glyph">⚙</span>
+          OPERATOR ID
+        </h2>
+        <NickEditor initial={nick} onChange={(n) => setNick(n)} />
       </section>
 
-      {/* Bot wins */}
-      <section className="flex flex-col gap-2">
-        <p className="font-press text-[9px] tracking-widest text-white/40">
+      <section
+        className="console-panel accent-orange"
+        style={{ animationDelay: "260ms" } as React.CSSProperties}
+      >
+        <span className="console-panel-tag">{"// COMBAT STATS"}</span>
+        <span className="console-panel-bracket tl" aria-hidden />
+        <span className="console-panel-bracket tr" aria-hidden />
+        <span className="console-panel-bracket bl" aria-hidden />
+        <span className="console-panel-bracket br" aria-hidden />
+        <h2 className="console-panel-title">
+          <span className="glyph">▲</span>
+          ESTADÍSTICAS
+        </h2>
+        <div className="console-stat-grid">
+          <Stat label="PARTIDOS" value={String(stats.matches)} delay={160} />
+          <Stat
+            label="VICTORIAS"
+            value={String(stats.wins)}
+            color="green"
+            delay={200}
+          />
+          <Stat
+            label="DERROTAS"
+            value={String(stats.losses)}
+            color="red"
+            delay={240}
+          />
+          <Stat
+            label="% VICTORIA"
+            value={`${winRate(stats)}%`}
+            color="gold"
+            delay={280}
+          />
+          <Stat
+            label="RACHA"
+            value={String(stats.currentStreak)}
+            color="cyan"
+            delay={320}
+          />
+          <Stat
+            label="MEJOR RACHA"
+            value={String(stats.bestStreak)}
+            color="gold"
+            delay={360}
+          />
+          <Stat label="GOLES +" value={String(stats.goalsFor)} delay={400} />
+          <Stat label="GOLES –" value={String(stats.goalsAgainst)} delay={440} />
+          <Stat
+            label="POWER-UPS"
+            value={String(stats.powerUpsTaken)}
+            color="pink"
+            delay={480}
+          />
+          <Stat
+            label="SHUTOUTS"
+            value={String(stats.shutoutWins)}
+            color="green"
+            delay={520}
+          />
+          <Stat
+            label="MÁS RÁPIDA"
+            value={
+              stats.fastestWinMs == null
+                ? "—"
+                : formatDuration(stats.fastestWinMs)
+            }
+            delay={560}
+          />
+          <Stat
+            label="TIEMPO TOTAL"
+            value={formatDuration(stats.totalPlayMs)}
+            delay={600}
+          />
+        </div>
+      </section>
+
+      <section
+        className="console-panel accent-purple"
+        style={{ animationDelay: "320ms" } as React.CSSProperties}
+      >
+        <span className="console-panel-tag">{"// VS BOT"}</span>
+        <span className="console-panel-bracket tl" aria-hidden />
+        <span className="console-panel-bracket tr" aria-hidden />
+        <span className="console-panel-bracket bl" aria-hidden />
+        <span className="console-panel-bracket br" aria-hidden />
+        <h2 className="console-panel-title">
+          <span className="glyph">⌬</span>
           VICTORIAS VS BOT
-        </p>
-        <div className="grid w-full grid-cols-3 gap-3">
-          <Tile
+        </h2>
+        <div className="console-stat-grid cols-3">
+          <Stat
             label="FÁCIL"
             value={String(stats.vsBotWins.easy)}
-            color="var(--neon-green)"
+            color="green"
+            delay={160}
           />
-          <Tile
+          <Stat
             label="MEDIO"
             value={String(stats.vsBotWins.medium)}
-            color="var(--neon-yellow)"
+            color="gold"
+            delay={220}
           />
-          <Tile
+          <Stat
             label="DIFÍCIL"
             value={String(stats.vsBotWins.hard)}
-            color="var(--neon-pink)"
+            color="red"
+            delay={280}
           />
         </div>
       </section>
 
-      {/* Achievements */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between">
-          <p className="font-press text-[10px] tracking-widest text-white/60">
-            LOGROS
-          </p>
-          <p className="font-press text-[9px] tracking-widest text-white/40">
+      <section
+        className="console-panel accent-gold"
+        style={{ animationDelay: "380ms" } as React.CSSProperties}
+      >
+        <span className="console-panel-tag">{"// ACHIEVEMENTS"}</span>
+        <span className="console-panel-bracket tl" aria-hidden />
+        <span className="console-panel-bracket tr" aria-hidden />
+        <span className="console-panel-bracket bl" aria-hidden />
+        <span className="console-panel-bracket br" aria-hidden />
+        <h2 className="console-panel-title">
+          <span className="glyph">★</span>
+          LOGROS
+          <span className="console-counter-pill" aria-label="Logros desbloqueados">
             {totalUnlocked} / {achievements.length}
-          </p>
-        </div>
-        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {achievements.map((a) => {
+          </span>
+        </h2>
+        <ul className="console-achievement-list">
+          {achievements.map((a, i) => {
             const got = unlocked.has(a.id);
             return (
               <li
                 key={a.id}
-                className={`flex items-center gap-3 rounded-md border px-3 py-2 ${
-                  got
-                    ? "border-[var(--neon-yellow)]/55 bg-[var(--neon-yellow)]/5"
-                    : "border-white/10 bg-black/20 opacity-60"
-                }`}
+                className={`console-achievement ${got ? "unlocked" : ""}`}
+                style={{
+                  animationDelay: `${200 + i * 60}ms`,
+                  animation: "console-fade-up 500ms ease-out both",
+                } as React.CSSProperties}
               >
-                <span
-                  className="font-press text-base"
-                  style={{
-                    color: got ? "var(--neon-yellow)" : "rgba(255,255,255,0.2)",
-                    textShadow: got ? "0 0 8px #ffd95c" : "none",
-                  }}
-                >
+                <span className="star" aria-hidden>
                   {got ? "★" : "☆"}
                 </span>
                 <div className="flex flex-col">
-                  <span
-                    className="font-press text-[10px] tracking-widest"
-                    style={{
-                      color: got ? "#fff" : "rgba(255,255,255,0.7)",
-                    }}
-                  >
-                    {a.name}
-                  </span>
-                  <span className="font-vt text-sm text-white/60">
-                    {a.description}
-                  </span>
+                  <span className="name">{a.name}</span>
+                  <span className="desc">{a.description}</span>
                 </div>
               </li>
             );
           })}
         </ul>
       </section>
-    </div>
+    </>
   );
 }
 
-function Tile({
+function Stat({
   label,
   value,
   color,
+  delay = 200,
 }: {
   label: string;
   value: string;
-  color?: string;
+  color?: "cyan" | "orange" | "gold" | "green" | "pink" | "red";
+  delay?: number;
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-white/10 bg-black/40 px-3 py-2 text-center backdrop-blur-sm">
-      <span className="font-press text-[8px] tracking-widest text-white/40">
-        {label}
-      </span>
-      <span
-        className="font-press text-base sm:text-lg"
-        style={{
-          color: color ?? "#fff",
-          textShadow: color ? `0 0 8px ${color}` : "none",
-        }}
-      >
-        {value}
-      </span>
+    <div
+      className={`console-stat${color ? ` color-${color}` : ""}`}
+      style={{ "--delay": `${delay}ms` } as React.CSSProperties}
+    >
+      <span className="label">{label}</span>
+      <span className="value">{value}</span>
     </div>
   );
 }

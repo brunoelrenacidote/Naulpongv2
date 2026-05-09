@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AuthButton from "@/components/AuthButton";
 import ProfilePanel from "@/components/ProfilePanel";
+import RotateLockOverlay from "@/components/lobby/RotateLockOverlay";
 
 export const metadata: Metadata = {
   title: "Perfil — NauLPong",
@@ -8,18 +10,80 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
   return (
-    <main className="has-bottom-nav safe-pt relative z-10 mx-auto flex min-h-[100dvh] w-full max-w-3xl flex-col items-center gap-6 px-4 pt-6 sm:gap-10 sm:px-6 sm:pt-10">
-      <header className="flex w-full flex-col items-center gap-1 text-center sm:gap-2">
-        <h1 className="hero-logo shine text-4xl leading-none sm:text-5xl">
-          PERFIL
-        </h1>
-      </header>
+    <>
+      <RotateLockOverlay />
+      <main className="console-screen">
+      <div className="console-bg" aria-hidden />
+      <div className="console-scan" aria-hidden />
+      <span className="console-glow tl" aria-hidden />
+      <span className="console-glow br" aria-hidden />
+      <div className="console-bezel" aria-hidden>
+        <span className="console-bezel-corner tl" />
+        <span className="console-bezel-corner tr" />
+        <span className="console-bezel-corner bl" />
+        <span className="console-bezel-corner br" />
+      </div>
 
-      <ProfilePanel />
+      <div className="console-content">
+        <header className="console-statusbar">
+          <Link
+            href="/"
+            className="chip"
+            aria-label="Volver al lobby"
+          >
+            <span className="arrow" aria-hidden>
+              ◀
+            </span>
+            <span>LOBBY</span>
+          </Link>
+          <span className="chip cyan" aria-hidden>
+            <span>OPERATOR · DOSSIER</span>
+            <span className="dot green" />
+          </span>
+        </header>
 
-      <section className="flex w-full max-w-md flex-col items-center gap-3">
-        <AuthButton />
-      </section>
-    </main>
+        <section className="console-hero">
+          <span className="console-eyebrow">[ OPERATOR PROFILE ]</span>
+          <h1 className="console-title" data-text="PERFIL">
+            PERFIL
+          </h1>
+          <p className="console-subtitle">
+            Tu carta de despliegue: estadísticas de combate, racha activa y
+            logros desbloqueados en la arena.
+          </p>
+        </section>
+
+        <ProfilePanel />
+
+        <section
+          className="console-panel accent-gold"
+          style={{ animationDelay: "420ms" } as React.CSSProperties}
+        >
+          <span className="console-panel-tag">{"// CLOUD SYNC"}</span>
+          <span className="console-panel-bracket tl" aria-hidden />
+          <span className="console-panel-bracket tr" aria-hidden />
+          <span className="console-panel-bracket bl" aria-hidden />
+          <span className="console-panel-bracket br" aria-hidden />
+          <h2 className="console-panel-title">
+            <span className="glyph">☁</span>
+            SESIÓN
+          </h2>
+          <AuthButton />
+        </section>
+
+        <Link
+          href="/"
+          className="console-back"
+          aria-label="Volver al lobby"
+          style={{ animationDelay: "480ms" } as React.CSSProperties}
+        >
+          <span className="arrow" aria-hidden>
+            ◀
+          </span>
+          VOLVER AL LOBBY
+        </Link>
+      </div>
+      </main>
+    </>
   );
 }

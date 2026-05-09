@@ -50,18 +50,18 @@ export default function AuthButton() {
   if (!session) {
     return (
       <>
-        <div className="flex w-full flex-col items-center gap-2">
+        <div className="console-auth">
+          <p className="hint">
+            Sincronizá tus stats en la nube. Opcional, pero recomendado.
+          </p>
           <button
             type="button"
-            className="btn-chunky w-full max-w-xs"
+            className="console-btn cyan full"
             onClick={() => setOpen(true)}
             aria-label="Iniciar sesión"
           >
             ☁ INICIAR SESIÓN
           </button>
-          <p className="font-vt text-center text-sm text-white/40">
-            Opcional. Tus stats se sincronizan en la nube.
-          </p>
         </div>
         <AuthModal
           open={open}
@@ -73,19 +73,12 @@ export default function AuthButton() {
   }
 
   return (
-    <div className="flex w-full flex-col items-center gap-2">
-      <p className="font-press text-[10px] tracking-widest text-white/55">
-        SESIÓN INICIADA
-      </p>
-      <p
-        className="font-press text-base tracking-widest text-[var(--neon-yellow)]"
-        style={{ textShadow: "0 0 8px rgba(255,217,92,0.55)" }}
-      >
-        @{session.username}
-      </p>
+    <div className="console-auth">
+      <span className="session-tag">SESIÓN ACTIVA</span>
+      <span className="session-name">@{session.username}</span>
       <button
         type="button"
-        className="btn-chunky pink w-full max-w-xs"
+        className="console-btn danger full"
         onClick={() => {
           clearSession();
           setSession(null);
