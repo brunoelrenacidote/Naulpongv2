@@ -107,3 +107,83 @@ export function sfxLose() {
     );
   });
 }
+
+/* ===== UI feedback (lobby Apex) ============================== */
+
+/**
+ * Click táctico — un blip corto + ligera caída de pitch. Pensado para
+ * cualquier toggle/botón secundario.
+ */
+export function sfxUiClick() {
+  blip({ freq: 1100, duration: 0.04, type: "square", volume: 0.06, freqEnd: 720 });
+}
+
+/** Hover/select más sutil. */
+export function sfxUiHover() {
+  blip({ freq: 1500, duration: 0.025, type: "triangle", volume: 0.04 });
+}
+
+/** Back / cancelar (descendiendo). */
+export function sfxUiBack() {
+  blip({ freq: 600, duration: 0.06, type: "square", volume: 0.06, freqEnd: 280 });
+}
+
+/** Cambio de modo en el selector — chord ascendente corto. */
+export function sfxModeSwitch() {
+  blip({ freq: 660, duration: 0.05, type: "square", volume: 0.07 });
+  setTimeout(
+    () => blip({ freq: 990, duration: 0.06, type: "square", volume: 0.07 }),
+    40,
+  );
+}
+
+/** Cycle entre personajes (cambio de leyenda). */
+export function sfxLegendCycle() {
+  blip({ freq: 880, duration: 0.04, type: "triangle", volume: 0.06 });
+  setTimeout(
+    () => blip({ freq: 1320, duration: 0.06, type: "triangle", volume: 0.06 }),
+    35,
+  );
+}
+
+/**
+ * Deploy / partida iniciada — rampa táctica con kick de bajo. Usar al
+ * iniciar matchmaking / enviar al usuario al juego.
+ */
+export function sfxDeploy() {
+  // Kick de bajo
+  blip({ freq: 110, duration: 0.18, type: "sine", volume: 0.18, freqEnd: 40 });
+  // Rampa de "alarma" ascendente
+  setTimeout(
+    () => blip({ freq: 440, duration: 0.18, type: "sawtooth", volume: 0.1, freqEnd: 1200 }),
+    60,
+  );
+  setTimeout(
+    () => blip({ freq: 1320, duration: 0.12, type: "square", volume: 0.08 }),
+    220,
+  );
+}
+
+/** Tiny haptic — vibrate API (mobile). 1 pulso corto. */
+export function hapticTap() {
+  if (typeof navigator === "undefined") return;
+  if (typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate(8);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Pulso medio (0.4s) para acciones importantes (deploy/cancelar). */
+export function hapticDeploy() {
+  if (typeof navigator === "undefined") return;
+  if (typeof navigator.vibrate === "function") {
+    try {
+      navigator.vibrate([12, 20, 24]);
+    } catch {
+      /* ignore */
+    }
+  }
+}
