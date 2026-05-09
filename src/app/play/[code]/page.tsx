@@ -20,7 +20,13 @@ export default function PlayPage({
     diff === "easy" || diff === "hard" ? diff : "medium";
   return (
     <LandscapeGate>
-      <main className="arena-stage safe-pt safe-pb">
+      <main className="arena-stage hud-console safe-pt safe-pb">
+        <span className="arena-bg-hex" aria-hidden />
+        <span className="arena-bg-scan" aria-hidden />
+        <span className="arena-bezel-corner tl" aria-hidden />
+        <span className="arena-bezel-corner tr" aria-hidden />
+        <span className="arena-bezel-corner bl" aria-hidden />
+        <span className="arena-bezel-corner br" aria-hidden />
         <GameClient
           code={code}
           isHost={searchParams.host === "1"}
