@@ -24,6 +24,12 @@ const ITEMS: NavItem[] = [
     match: (p) => p === "/" || p.startsWith("/play"),
   },
   {
+    href: "/luck-royale",
+    glyph: "❖",
+    label: "LUCK",
+    match: (p) => p.startsWith("/luck-royale"),
+  },
+  {
     href: "/about",
     glyph: "?",
     label: "GUÍA",
