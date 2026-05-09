@@ -1,6 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 import {
+  CharacterId,
   ClientMessage,
   FIELD_H,
   FIELD_W,
@@ -9,6 +10,8 @@ import {
   ServerMessage,
   Side,
   TICK_MS,
+  isCharacterId,
+  pickRandomCharacters,
 } from "../src/lib/game-types";
 import {
   Inputs,
@@ -25,6 +28,7 @@ interface PlayerSlot {
   side: Side;
   input: { up: boolean; down: boolean; targetY: number | null };
   nick: string;
+  prefChar: CharacterId | null;
 }
 
 function sanitizeNick(nick: unknown): string {
@@ -50,6 +54,8 @@ export class GameRoom implements DurableObject {
   botSide: Side | null = null;
   botInput = { up: false, down: false, targetY: null as number | null };
   botJitterPhase = Math.random() * Math.PI * 2;
+  /** Personaje preferido del próximo cliente que se conecte (de la URL). */
+  pendingPrefChar: CharacterId | null = null;
 
   constructor(_ctx: DurableObjectState, _env: unknown) {
     this.state = createInitialState(Date.now());
@@ -68,6 +74,12 @@ export class GameRoom implements DurableObject {
       const d = url.searchParams.get("difficulty");
       if (d === "easy" || d === "medium" || d === "hard") this.botDifficulty = d;
     }
+    // Personaje preferido del cliente (Luck Royale unlock + lobby cosmetic).
+    // Lo guardamos en `pendingPrefChar` y lo aplicamos en handleSession()
+    // cuando se asigna el slot. El worker sólo valida que sea un
+    // CharacterId conocido; el client-side ya filtra por unlock cacheado.
+    const pref = url.searchParams.get("prefChar");
+    this.pendingPrefChar = isCharacterId(pref) ? pref : null;
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
     this.handleSession(server);
@@ -89,8 +101,11 @@ export class GameRoom implements DurableObject {
         side: free,
         input: { up: false, down: false, targetY: null },
         nick: "",
+        prefChar: this.pendingPrefChar,
       };
+      this.pendingPrefChar = null;
       this.players.set(id, slot);
+      this.applyPrefChars();
       this.send(ws, { type: "assign", you: free, playerId: id });
 
       if (this.botEnabled && !this.botSide) {
@@ -102,7 +117,7 @@ export class GameRoom implements DurableObject {
       const enoughToStart =
         this.players.size === 2 || (this.botEnabled && this.botSide);
       if (enoughToStart && this.state.phase === "WAITING") {
-        startCountdown(this.state, Date.now());
+        startCountdown(this.state, Date.now(), this.collectPrefs());
         this.startLoop();
       }
     } else {
@@ -156,7 +171,7 @@ export class GameRoom implements DurableObject {
         this.state.rematchVotes[this.botSide] = true;
       }
       if (this.state.rematchVotes.left && this.state.rematchVotes.right) {
-        startCountdown(this.state, Date.now());
+        startCountdown(this.state, Date.now(), this.collectPrefs());
         this.startLoop();
       }
       this.broadcastState();
@@ -178,6 +193,33 @@ export class GameRoom implements DurableObject {
       this.broadcastState();
     }
     this.spectators.delete(id);
+  }
+
+  /**
+   * Junta los `prefChar` de los slots conectados (humanos) para pasarlos
+   * a `pickRandomCharacters`. Bots y slots vacíos quedan en null y se
+   * resuelven al fallback hijo-fiesta / clavel.
+   */
+  collectPrefs(): { left: CharacterId | null; right: CharacterId | null } {
+    const out: { left: CharacterId | null; right: CharacterId | null } = {
+      left: null,
+      right: null,
+    };
+    for (const p of this.players.values()) {
+      out[p.side] = p.prefChar;
+    }
+    return out;
+  }
+
+  /**
+   * Aplica `prefChar` de los slots actuales al estado vivo. Útil cuando
+   * un cliente se conecta después del inicio (ej: spectator vuelve a ser
+   * jugador) o como refresh en cada `assign`.
+   */
+  applyPrefChars() {
+    if (this.state.phase !== "WAITING") return;
+    const prefs = this.collectPrefs();
+    this.state.characters = pickRandomCharacters(prefs);
   }
 
   attachBot() {

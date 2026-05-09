@@ -11,6 +11,10 @@
 //   /public/sprites/clavel-blink.png
 //   /public/sprites/clavel-happy.png
 //   /public/sprites/clavel-sad.png
+//   /public/sprites/morro-maincraftiano-idle.png
+//   /public/sprites/morro-maincraftiano-blink.png
+//   /public/sprites/morro-maincraftiano-happy.png
+//   /public/sprites/morro-maincraftiano-sad.png
 //
 // PNGs should be transparent. Source resolution is up to the artist —
 // recommended 16x18 (will be scaled 4x) or 32x36 / 64x72 for higher detail.
@@ -58,7 +62,7 @@ function loadOnce(id: CharacterId, pose: Pose): SpriteState {
  */
 export function preloadSprites() {
   if (typeof window === "undefined") return;
-  const ids: CharacterId[] = ["hijo-fiesta", "clavel"];
+  const ids: CharacterId[] = ["hijo-fiesta", "clavel", "morro-maincraftiano"];
   const poses: Pose[] = ["idle", "blink", "happy", "sad"];
   for (const id of ids) {
     for (const pose of poses) {

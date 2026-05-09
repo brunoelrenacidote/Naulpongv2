@@ -946,6 +946,57 @@
   50% { transform: translateY(-4px); }
 }
 
+.legend-portrait-frame.is-locked .legend-portrait-canvas > :first-child {
+  filter: grayscale(0.85) brightness(0.5);
+}
+.legend-lock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-auto-flow: row;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  pointer-events: none;
+  background: radial-gradient(
+    60% 60% at 50% 50%,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+}
+.legend-lock-glyph {
+  font-size: 36px;
+  text-shadow: 0 0 14px rgba(247, 201, 72, 0.7);
+}
+.legend-lock-tag {
+  font-family: var(--apex-display, var(--display));
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--apex-gold, #f7c948);
+  text-shadow: 0 0 10px rgba(247, 201, 72, 0.65);
+}
+.legend-unlock-cta {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 12px;
+  font-family: var(--apex-display, var(--display));
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  color: var(--apex-gold, #f7c948);
+  text-decoration: none;
+  border: 1px solid rgba(247, 201, 72, 0.55);
+  background: rgba(247, 201, 72, 0.08);
+  border-radius: 3px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  align-self: flex-start;
+}
+.legend-unlock-cta:hover {
+  color: var(--ink, #fff);
+  border-color: var(--apex-gold, #f7c948);
+  background: rgba(247, 201, 72, 0.18);
+}
+
 .legend-portrait-rays {
   position: absolute;
   inset: 0;

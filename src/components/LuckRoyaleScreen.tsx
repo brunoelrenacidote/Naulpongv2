@@ -18,6 +18,7 @@ import {
   type LuckItem,
   type LuckItemRarity,
 } from "@/lib/luck-royale";
+import { saveUnlocked } from "@/lib/unlocked-cache";
 
 const RARITY_LABEL: Record<LuckItemRarity, string> = {
   common: "COMÚN",
@@ -67,8 +68,10 @@ export default function LuckRoyaleScreen() {
     apiLuckRoyaleState(session.token)
       .then((s) => {
         if (!alive) return;
-        if (s) setState(s);
-        else setLoadErr("Sesión vencida. Volvé a /login.");
+        if (s) {
+          setState(s);
+          saveUnlocked(s.unlockedItems);
+        } else setLoadErr("Sesión vencida. Volvé a /login.");
       })
       .catch((e) => {
         if (!alive) return;
@@ -114,6 +117,7 @@ export default function LuckRoyaleScreen() {
             }
           : prev,
       );
+      saveUnlocked(result.unlockedItems);
       // Scroll suave al reveal en mobile landscape.
       requestAnimationFrame(() => {
         revealRef.current?.scrollIntoView({

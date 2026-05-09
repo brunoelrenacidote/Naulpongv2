@@ -6,20 +6,49 @@
 // goes through pickRandomCharacters() unless we wire this in later.
 
 import type { CharacterId } from "./game-types";
-import { CHARACTERS } from "./game-types";
+import { CHARACTERS, isCharacterId } from "./game-types";
 
 const KEY = "naulpong:character";
-const ALL: CharacterId[] = ["hijo-fiesta", "clavel"];
+
+/**
+ * Lista completa de personajes — incluye los desbloqueables del Luck
+ * Royale. Usar `availableCharacters(unlockedItems)` para filtrar a los
+ * realmente seleccionables por el usuario actual.
+ */
+const ALL: CharacterId[] = ["hijo-fiesta", "clavel", "morro-maincraftiano"];
+
+/**
+ * Personajes que requieren un drop del Luck Royale (cloud-only) para
+ * estar desbloqueados. El id es exactamente el del LUCK_POOL.
+ */
+export const LOCKED_CHARACTERS: Readonly<Record<CharacterId, string | null>> = {
+  "hijo-fiesta": null,
+  clavel: null,
+  "morro-maincraftiano": "morro-maincraftiano",
+};
 
 export const CHARACTER_ORDER: readonly CharacterId[] = ALL;
+
+export function isCharacterUnlocked(
+  id: CharacterId,
+  unlockedItems: readonly string[],
+): boolean {
+  const required = LOCKED_CHARACTERS[id];
+  if (!required) return true;
+  return unlockedItems.includes(required);
+}
+
+export function availableCharacters(
+  unlockedItems: readonly string[],
+): CharacterId[] {
+  return ALL.filter((id) => isCharacterUnlocked(id, unlockedItems));
+}
 
 export function loadCharacter(): CharacterId {
   if (typeof window === "undefined") return ALL[0];
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (raw && (raw === "hijo-fiesta" || raw === "clavel")) {
-      return raw as CharacterId;
-    }
+    if (raw && isCharacterId(raw)) return raw;
   } catch {
     /* ignore */
   }
@@ -44,7 +73,10 @@ export function nextCharacter(current: CharacterId, dir: 1 | -1): CharacterId {
 }
 
 export function otherCharacter(current: CharacterId): CharacterId {
-  return current === "hijo-fiesta" ? "clavel" : "hijo-fiesta";
+  // Devuelve el siguiente personaje base (sin lockear). Solo usado por
+  // la lógica de fallback del worker; clientes deben usar `nextCharacter`.
+  if (current === "hijo-fiesta") return "clavel";
+  return "hijo-fiesta";
 }
 
 export function characterMeta(id: CharacterId) {

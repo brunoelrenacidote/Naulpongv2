@@ -65,6 +65,11 @@ import {
 import { Achievement, recordMatch } from "@/lib/stats";
 import { apiPushStats, loadSession } from "@/lib/auth-client";
 import { apiPlayCredit } from "@/lib/luck-royale-client";
+import {
+  isCharacterUnlocked,
+  loadCharacter,
+} from "@/lib/character-storage";
+import { loadUnlocked } from "@/lib/unlocked-cache";
 
 interface Props {
   code: string;
@@ -115,13 +120,25 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
 
   // Connect
   useEffect(() => {
+    // Personaje preferido del usuario (lobby cosmetic + Luck Royale unlock).
+    // Sólo lo enviamos si está desbloqueado (cache de unlocked-items o
+    // personaje base) para que el worker no tenga que re-validar nada
+    // que no sea el rango de ids válidos.
+    const prefId = loadCharacter();
+    const cachedUnlocks = loadUnlocked();
+    const prefChar = isCharacterUnlocked(prefId, cachedUnlocks)
+      ? prefId
+      : null;
+    const baseQuery: Record<string, string> = {};
+    if (prefChar) baseQuery.prefChar = prefChar;
+    if (mode === "bot") {
+      baseQuery.bot = "1";
+      baseQuery.difficulty = botDifficulty ?? "medium";
+    }
     const ws = new PartySocket({
       host: partyHost(),
       room: code.toLowerCase(),
-      query:
-        mode === "bot"
-          ? { bot: "1", difficulty: botDifficulty ?? "medium" }
-          : undefined,
+      query: Object.keys(baseQuery).length > 0 ? baseQuery : undefined,
     });
     wsRef.current = ws;
     ws.addEventListener("open", () => {
