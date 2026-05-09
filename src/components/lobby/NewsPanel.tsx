@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import LuckChip from "./LuckChip";
 
 /**
  * Panel derecho del lobby — tarjetas estilo "intel" con info real del
- * juego (cómo se juega + acceso al perfil). Sin eventos / temporadas
- * inventadas; sólo lo que ya está implementado.
+ * juego. Lleva al tope la CTA de Luck Royale (estética casino) y debajo
+ * los accesos a guía y perfil.
  */
 export default function NewsPanel() {
   return (
     <aside className="news-panel" aria-label="Intel del operativo">
+      <LuckChip />
       <Link href="/about" className="news-card event">
         <span className="news-eyebrow">[ Intel ]</span>
         <h3 className="news-title">Cómo se juega</h3>
