@@ -21,9 +21,9 @@ export interface ModeDef {
 export const MODES: readonly ModeDef[] = [
   {
     id: "quick",
-    tag: "S1 · Trios",
+    tag: "Online · 1v1",
     title: "DEPLOY RÁPIDO",
-    subtitle: "Matchmaking 1v1 online",
+    subtitle: "Matchmaking automático",
     color: "#ff5a1f",
     Icon: IconQuickMatch,
   },

@@ -107,6 +107,22 @@ export const IconMusicOff = (p: Props) => (
   </Base>
 );
 
+export const IconSfxOn = (p: Props) => (
+  <Base {...p}>
+    <path d="M3 9v6h4l5 4V5L7 9H3z" />
+    <path d="M16 8a5 5 0 0 1 0 8" />
+    <path d="M19 5a9 9 0 0 1 0 14" />
+  </Base>
+);
+
+export const IconSfxOff = (p: Props) => (
+  <Base {...p}>
+    <path d="M3 9v6h4l5 4V5L7 9H3z" />
+    <path d="M16 9l5 6" />
+    <path d="M21 9l-5 6" />
+  </Base>
+);
+
 export const IconSettings = (p: Props) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="3" />

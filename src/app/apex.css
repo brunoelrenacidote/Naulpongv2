@@ -1955,52 +1955,15 @@
 }
 
 /* =====================================================================
-   Responsive
+   Responsive (legacy block — los breakpoints específicos de tablet y
+   landscape mobile se manejan más abajo, en la sección "Apex polish v2").
+   Acá sólo dejamos ajustes mínimos para tablet portrait que no chocan
+   con el lock-portrait de mobile.
    ===================================================================== */
-@media (max-width: 720px) {
-  .legend-card {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 8px;
-  }
-  .legend-stats-side,
-  .legend-info-side {
-    border: 1px solid var(--apex-line-2);
-    clip-path: var(--apex-clip);
-    -webkit-clip-path: var(--apex-clip);
-  }
-  .news-panel { display: none; }
-  .squad-chip .sq-info { min-width: 80px; padding-right: 16px; }
-  .squad-chip .sq-nick { font-size: 13px; }
-  .bp-bar { padding-right: 10px; padding-left: 6px; min-width: 0; }
-  .bp-progress-wrap { min-width: 60px; }
+@media (max-width: 720px) and (orientation: landscape) {
   .deploy-cta .d-label { font-size: 20px; }
-  .deploy-cta { padding: 12px 22px 12px 16px; min-height: 64px; }
-  .deploy-cta .d-glyph { width: 40px; height: 40px; }
+  .deploy-cta { padding: 12px 22px 12px 16px; min-height: 60px; }
   .mode-tabs { max-width: none; }
-  .legend-portrait-frame { max-width: 220px; }
-}
-
-/* En portrait estricto, ocultamos rail y news para enfocarse en stage */
-@media (max-width: 480px) {
-  .apex-stage {
-    grid-template-columns: 1fr;
-  }
-  .side-rail {
-    flex-direction: row;
-    justify-content: center;
-  }
-  .apex-rail { align-self: end; }
-  .news-panel { display: none; }
-  .apex-bottom { grid-template-columns: 1fr; gap: 10px; }
-}
-
-@media (orientation: landscape) and (max-height: 480px) {
-  .apex-grid { gap: 6px; }
-  .legend-portrait-frame { aspect-ratio: 4/5; max-width: 200px; }
-  .legend-name { font-size: 22px; }
-  .deploy-cta { min-height: 64px; }
-  .deploy-cta .d-label { font-size: 22px; }
 }
 
 /* Reduced motion */
@@ -2108,4 +2071,458 @@
   color: var(--apex-orange);
   margin-bottom: 8px;
   text-shadow: 0 0 10px rgba(255, 90, 31, 0.55);
+}
+
+/* =====================================================================
+   Apex polish v2 — sobreescritura/refinamiento del lobby:
+   - corner brackets más cinematográficos
+   - mode tabs con notch fuerte y banda lateral
+   - deploy CTA más "drop pod" (hex stamp + diagonal sheen)
+   - stage portrait con header de leyenda
+   - responsive serio (1024 / 880 / 640 / 480 / 380 / landscape mobile)
+   ===================================================================== */
+
+/* ---- HUD frame brackets más gruesos (Apex/Warzone style) ---- */
+.hud-bracket {
+  width: 18px;
+  height: 18px;
+  border-color: var(--frame-accent, var(--apex-cyan));
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--frame-accent, var(--apex-cyan)) 60%, transparent));
+}
+.hud-frame::before {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--frame-accent, var(--apex-cyan)) 7%, transparent) 0%,
+    transparent 35%
+  );
+}
+.hud-frame::after {
+  background: linear-gradient(
+    180deg,
+    transparent 0,
+    color-mix(in srgb, var(--frame-accent, var(--apex-cyan)) 4%, transparent) 50%,
+    transparent 100%
+  );
+}
+
+/* ---- Mode tabs: fuerte estado activo con stripe lateral ---- */
+.mode-tab {
+  padding-left: 18px;
+}
+.mode-tab .mt-stripe,
+.mode-tab::after {
+  pointer-events: none;
+}
+.mode-tab.active::after {
+  /* stripe vertical lateral (en lugar del notch superior) */
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 6px;
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    var(--m-color) 0%,
+    color-mix(in srgb, var(--m-color) 30%, transparent) 100%
+  );
+  box-shadow: 0 0 10px var(--m-color);
+  height: auto;
+}
+.mode-tab.active .mt-title {
+  text-shadow: 0 0 10px color-mix(in srgb, var(--m-color) 60%, transparent);
+}
+.mode-tab.active::before {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--m-color) 28%, transparent) 0%,
+    color-mix(in srgb, var(--m-color) 6%, transparent) 70%,
+    transparent 100%
+  );
+}
+
+/* ---- Deploy CTA: stamp esquina + lights más serios ---- */
+.deploy-cta .d-stamp {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  transform: rotate(0deg);
+  font-family: var(--apex-mono);
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  padding: 2px 6px;
+  border: 1px dashed color-mix(in srgb, var(--d-color) 75%, white 0%);
+  color: color-mix(in srgb, var(--d-color) 85%, white 25%);
+  background: rgba(0, 0, 0, 0.45);
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: 0.85;
+  z-index: 2;
+  white-space: nowrap;
+}
+.deploy-cta:hover:not(:disabled) .d-stamp {
+  opacity: 1;
+}
+.deploy-cta::before {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0,
+      transparent 9px,
+      rgba(0, 0, 0, 0.22) 9px,
+      rgba(0, 0, 0, 0.22) 10px
+    ),
+    radial-gradient(
+      120% 80% at 100% 50%,
+      color-mix(in srgb, var(--d-color) 30%, transparent) 0%,
+      transparent 70%
+    );
+}
+
+/* ---- Side rail buttons (links): aspect ratio fijo y separación ---- */
+.side-rail-btn {
+  text-decoration: none;
+}
+
+/* =====================================================================
+   Responsive overhaul
+   ===================================================================== */
+
+/* Desktop pequeña / tablet ancha: comprimir lateral derecha */
+@media (max-width: 1024px) {
+  .apex-stage {
+    grid-template-columns: 52px 1fr 200px;
+    gap: 10px;
+  }
+  .legend-card {
+    grid-template-columns:
+      minmax(160px, 1fr)
+      minmax(0, 1.3fr)
+      minmax(170px, 1fr);
+    gap: 12px;
+  }
+}
+
+/* Tablet portrait: sacamos el news panel de la stage */
+@media (max-width: 880px) {
+  .apex-stage {
+    grid-template-columns: 48px 1fr;
+  }
+  .apex-news {
+    display: none;
+  }
+  .legend-portrait-frame {
+    max-width: 280px;
+  }
+}
+
+/* =====================================================================
+   Mobile = LANDSCAPE only.
+   En portrait + viewport chico mostramos un overlay "rotá el dispositivo"
+   y el lobby queda detrás bloqueado. En landscape mobile el layout 3-col
+   compacto se mantiene visible.
+   ===================================================================== */
+
+/* Landscape mobile compacto (típico smartphone rotado) */
+@media (orientation: landscape) and (max-height: 520px) {
+  .apex-grid {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+  .apex-top { min-height: 38px; }
+  .apex-stage {
+    grid-template-columns: 42px minmax(0, 1fr) 168px;
+    gap: 8px;
+  }
+  .apex-news { display: flex; }
+  .apex-rail { flex-direction: column; align-self: center; }
+  .side-rail { flex-direction: column; gap: 6px; }
+  .side-rail-btn {
+    width: 42px;
+    height: 42px;
+    padding: 4px;
+    flex-direction: column;
+    gap: 0;
+  }
+  .side-rail-btn .sr-label {
+    font-size: 7px;
+    letter-spacing: 0.16em;
+  }
+  .legend-card {
+    grid-template-columns:
+      minmax(140px, 1fr)
+      minmax(0, 1.3fr)
+      minmax(140px, 1fr);
+    grid-template-rows: 1fr;
+    gap: 8px;
+    padding: 8px;
+  }
+  .legend-stats-side,
+  .legend-info-side { padding: 8px 10px; }
+  .legend-portrait-frame { max-width: 170px; aspect-ratio: 1/1; }
+  .legend-name { font-size: 22px; }
+  .legend-codename { font-size: 9px; }
+  .legend-tagline { font-size: 10px; line-height: 1.3; }
+  .stat-row .stat-head { font-size: 9px; }
+  .stat-row .stat-bar { height: 6px; }
+  .legend-skill { padding: 8px 10px; }
+  .sk-name { font-size: 11px; }
+  .sk-desc { font-size: 9px; line-height: 1.3; }
+  .apex-bottom {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "modes deploy";
+    align-items: end;
+    gap: 8px;
+  }
+  .apex-bottom > .apex-bottom-modes { grid-area: modes; }
+  .apex-bottom > .deploy-cta { grid-area: deploy; width: auto; }
+  .mode-tabs { gap: 6px; max-width: none; }
+  .mode-tab { min-height: 50px; padding: 6px 8px 6px 14px; }
+  .mode-tab .mt-title { font-size: 12px; }
+  .mode-tab .mt-sub { display: none; }
+  .deploy-cta {
+    min-height: 54px;
+    padding: 10px 22px 10px 16px;
+  }
+  .deploy-cta .d-glyph { width: 36px; height: 36px; }
+  .deploy-cta .d-label { font-size: 20px; }
+  .deploy-cta .d-stamp { display: none; }
+  .news-card { padding: 8px 10px; }
+  .news-title { font-size: 12px; }
+  .news-sub { font-size: 9px; line-height: 1.3; }
+  .news-cta { font-size: 8px; padding: 3px 8px; }
+  .squad-chip .sq-eyebrow { display: none; }
+  .squad-chip .sq-nick { font-size: 12px; }
+  .squad-chip .sq-tier {
+    width: 30px;
+    height: 30px;
+  }
+  .squad-chip .sq-tier-num { font-size: 13px; }
+  .feed-ticker { font-size: 9px; padding: 3px 8px; height: 18px; }
+  .feed-ticker .ft-tag { font-size: 7px; }
+  .bp-progress-eyebrow { font-size: 8px; }
+  .bp-progress-pct { font-size: 9px; }
+  .hud-controls { gap: 6px; }
+  .hud-btn { width: 36px; height: 36px; }
+}
+
+/* Landscape mobile más alto (e.g. iPad mini rotado) — más respiro */
+@media (orientation: landscape) and (min-height: 521px) and (max-height: 720px) and (max-width: 1100px) {
+  .apex-stage {
+    grid-template-columns: 48px minmax(0, 1fr) 200px;
+    gap: 10px;
+  }
+  .legend-portrait-frame { max-width: 220px; }
+}
+
+/* =====================================================================
+   Rotate-lock overlay
+   Sólo visible en mobile portrait (viewport angosto + alto). En el resto
+   queda hidden y la lobby se ve normal.
+   ===================================================================== */
+.rotate-lock {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(140% 90% at 50% 30%, rgba(255, 90, 31, 0.18) 0%, transparent 60%),
+    radial-gradient(120% 70% at 50% 100%, rgba(0, 212, 255, 0.12) 0%, transparent 70%),
+    linear-gradient(180deg, #04060a 0%, #02030a 100%);
+  color: var(--apex-ink);
+  font-family: var(--apex-body);
+  text-align: center;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+.rotate-lock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      60deg,
+      transparent 0,
+      transparent 22px,
+      rgba(0, 212, 255, 0.05) 22px,
+      rgba(0, 212, 255, 0.05) 23px
+    ),
+    repeating-linear-gradient(
+      -60deg,
+      transparent 0,
+      transparent 22px,
+      rgba(255, 90, 31, 0.05) 22px,
+      rgba(255, 90, 31, 0.05) 23px
+    );
+  mask-image: radial-gradient(ellipse at center, #000 0%, #000 35%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 0%, #000 35%, transparent 80%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.rl-frame {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 22px 26px;
+  background:
+    linear-gradient(180deg, rgba(15, 21, 30, 0.92), rgba(8, 10, 16, 0.96));
+  border: 1px solid color-mix(in srgb, var(--apex-orange) 60%, transparent);
+  clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  -webkit-clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+  box-shadow:
+    0 0 0 1px rgba(255, 90, 31, 0.2) inset,
+    0 18px 60px rgba(0, 0, 0, 0.7),
+    0 0 32px color-mix(in srgb, var(--apex-orange) 30%, transparent);
+  max-width: 360px;
+  width: 100%;
+}
+.rl-eyebrow {
+  font-family: var(--apex-mono);
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  color: var(--apex-orange);
+  text-shadow: 0 0 10px rgba(255, 90, 31, 0.55);
+}
+.rl-phone {
+  position: relative;
+  width: 78px;
+  height: 130px;
+  margin: 8px 0 4px;
+  animation: rl-rotate 2.6s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+.rl-phone-body {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--apex-cyan);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow:
+    0 0 0 2px rgba(0, 212, 255, 0.2) inset,
+    0 0 18px color-mix(in srgb, var(--apex-cyan) 40%, transparent);
+}
+.rl-phone-screen {
+  position: absolute;
+  inset: 8px 6px 14px 6px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--apex-cyan) 30%, transparent) 0%, transparent 50%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 212, 255, 0.06) 0,
+      rgba(0, 212, 255, 0.06) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+  border-radius: 4px;
+}
+.rl-phone-notch {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 4px;
+  background: var(--apex-cyan);
+  box-shadow: 0 0 8px var(--apex-cyan);
+  border-radius: 2px;
+  opacity: 0.7;
+}
+.rl-phone-arrow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 96px;
+  height: 96px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      transparent 38%,
+      color-mix(in srgb, var(--apex-orange) 60%, transparent) 39%,
+      color-mix(in srgb, var(--apex-orange) 60%, transparent) 41%,
+      transparent 42%
+    );
+  -webkit-mask-image: conic-gradient(from -45deg, #000 0deg, #000 220deg, transparent 240deg);
+  mask-image: conic-gradient(from -45deg, #000 0deg, #000 220deg, transparent 240deg);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--apex-orange) 70%, transparent));
+  animation: rl-arrow-spin 2.6s ease-in-out infinite;
+}
+@keyframes rl-rotate {
+  0%, 12% { transform: rotate(0deg); }
+  60%, 88% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes rl-arrow-spin {
+  0%, 12% { opacity: 0.85; transform: translate(-50%, -50%) rotate(0deg); }
+  60%, 88% { opacity: 0.85; transform: translate(-50%, -50%) rotate(-90deg); }
+  100% { opacity: 0.85; transform: translate(-50%, -50%) rotate(0deg); }
+}
+.rl-title {
+  font-family: var(--apex-display);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--apex-ink);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--apex-orange) 70%, transparent);
+  margin: 0;
+}
+.rl-sub {
+  font-family: var(--apex-tech);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--apex-ink-soft);
+  margin: 0;
+  max-width: 280px;
+}
+.rl-sub strong {
+  color: var(--apex-cyan);
+  font-weight: 700;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--apex-cyan) 60%, transparent);
+}
+.rl-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--apex-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--apex-ink-mute);
+  padding: 5px 10px;
+  border: 1px solid var(--apex-line-2);
+  background: rgba(0, 0, 0, 0.4);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+.rl-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--apex-orange);
+  box-shadow: 0 0 8px var(--apex-orange);
+  border-radius: 50%;
+}
+
+/* Mostrar el rotate-lock SOLO en portrait + viewport chico (mobile) */
+@media (orientation: portrait) and (max-width: 900px) {
+  .rotate-lock { display: flex; }
+  /* Bloqueamos scroll/interacción del lobby detrás. */
+  .apex-shell {
+    overflow: hidden;
+  }
+}
+
+/* Touch hover suppression: en touch el hover de mode-tab no debe pegar */
+@media (hover: none) {
+  .mode-tab:hover::before { opacity: 0; }
+  .mode-tab.active::before { opacity: 1; }
+  .deploy-cta:hover:not(:disabled) {
+    transform: none;
+    filter: none;
+  }
 }

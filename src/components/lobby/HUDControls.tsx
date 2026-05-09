@@ -13,23 +13,25 @@ import {
   IconLogOut,
   IconMusicOff,
   IconMusicOn,
-  IconSettings,
+  IconSfxOff,
+  IconSfxOn,
 } from "./icons";
-import { sfxUiClick, sfxUiBack } from "@/lib/sounds";
+import { isSfxOn, setSfxOn, sfxUiClick, sfxUiBack } from "@/lib/sounds";
 
 /**
- * Cluster top-right: música, ajustes, login/logout. Estilo táctico Apex,
+ * Cluster top-right: música, SFX, login/logout. Estilo táctico Apex,
  * botones cuadrados con borde fino y glow. SFX en cada acción.
  */
 export default function HUDControls() {
   const [music, setMusic] = useState(true);
+  const [sfx, setSfx] = useState(true);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     setMusic(isMusicOn());
+    setSfx(isSfxOn());
     setSession(loadSession());
     setHydrated(true);
     function refresh() {
@@ -46,10 +48,14 @@ export default function HUDControls() {
     sfxUiClick();
   }
 
-  function handleSettings() {
-    sfxUiClick();
-    setToast("AJUSTES: PRÓXIMAMENTE");
-    window.setTimeout(() => setToast(null), 1800);
+  function toggleSfx() {
+    const next = !sfx;
+    setSfx(next);
+    setSfxOn(next);
+    if (next) {
+      // Sonido de confirmación al re-activar.
+      sfxUiClick();
+    }
   }
 
   function handleAuthClick() {
@@ -77,11 +83,12 @@ export default function HUDControls() {
 
       <button
         type="button"
-        className="hud-btn"
-        onClick={handleSettings}
-        aria-label="Ajustes"
+        className={`hud-btn ${sfx ? "" : "muted"}`}
+        onClick={toggleSfx}
+        aria-label={sfx ? "Apagar efectos" : "Encender efectos"}
+        aria-pressed={sfx}
       >
-        <IconSettings size={20} />
+        {sfx ? <IconSfxOn size={20} /> : <IconSfxOff size={20} />}
       </button>
 
       <button
@@ -95,12 +102,6 @@ export default function HUDControls() {
       >
         {session ? <IconLogOut size={20} /> : <IconLogIn size={20} />}
       </button>
-
-      {toast && (
-        <div className="apex-toast" role="status">
-          {toast}
-        </div>
-      )}
 
       <AuthModal
         open={authOpen}
