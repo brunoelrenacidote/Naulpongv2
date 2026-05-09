@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import CharacterPreview from "@/components/CharacterPreview";
 import { loadCharacter, saveCharacter } from "@/lib/character-storage";
 import type { CharacterId } from "@/lib/game-types";
-import { loadStats, type Stats } from "@/lib/stats";
 import { IconArrowLeft, IconArrowRight } from "./icons";
 import {
   IconBoltTactical,
@@ -71,15 +70,10 @@ const LEGENDS: Record<CharacterId, LegendData> = {
 export default function LegendCard() {
   const [id, setId] = useState<CharacterId>("hijo-fiesta");
   const [hydrated, setHydrated] = useState(false);
-  const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     setId(loadCharacter());
-    setStats(loadStats());
     setHydrated(true);
-    const refresh = () => setStats(loadStats());
-    window.addEventListener("naulpong:stats-changed", refresh);
-    return () => window.removeEventListener("naulpong:stats-changed", refresh);
   }, []);
 
   function cycle(dir: 1 | -1) {
@@ -110,22 +104,6 @@ export default function LegendCard() {
         <StatRow Icon={IconScope} label="Control" value={data.control} />
         <StatRow Icon={IconBoltTactical} label="Poder" value={data.power} />
         <StatRow Icon={IconShield} label="Defensa" value={data.defense} />
-
-        <div className="legend-stats-divider" aria-hidden />
-
-        <span className="stat-eyebrow alt">[ MATCH LOG ]</span>
-        <span className="legend-mini-row">
-          <span className="mr-label">PARTIDAS</span>
-          <span className="mr-value">{stats?.matches ?? 0}</span>
-        </span>
-        <span className="legend-mini-row">
-          <span className="mr-label">RACHA</span>
-          <span className="mr-value">{stats?.currentStreak ?? 0}</span>
-        </span>
-        <span className="legend-mini-row">
-          <span className="mr-label">MEJOR</span>
-          <span className="mr-value">{stats?.bestStreak ?? 0}</span>
-        </span>
       </aside>
 
       {/* Portrait central */}
@@ -178,22 +156,6 @@ export default function LegendCard() {
           <span className="sk-text">
             <span className="sk-name">{data.skill.name}</span>
             <span className="sk-desc">{data.skill.desc}</span>
-          </span>
-        </div>
-
-        <div className="legend-loadout">
-          <span className="ll-eyebrow">[ Loadout · 1v1 ]</span>
-          <span className="ll-row">
-            <span className="ll-key">PADDLE</span>
-            <span className="ll-val">CIVIL · CHROME</span>
-          </span>
-          <span className="ll-row">
-            <span className="ll-key">FINISHER</span>
-            <span className="ll-val">TURBO BALL</span>
-          </span>
-          <span className="ll-row">
-            <span className="ll-key">RANGO</span>
-            <span className="ll-val rank">SILVER II</span>
           </span>
         </div>
       </aside>

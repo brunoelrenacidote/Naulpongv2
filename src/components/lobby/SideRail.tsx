@@ -1,73 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import {
-  IconCalendar,
-  IconNews,
-  IconStore,
-  IconTarget,
-} from "./icons";
+import Link from "next/link";
+import { IconNews, IconTarget } from "./icons";
 import { sfxUiClick, hapticTap } from "@/lib/sounds";
 
 interface RailItem {
   Icon: (p: { size?: number }) => JSX.Element;
   label: string;
-  badge?: string;
+  href: string;
   color: string;
+  ariaLabel: string;
 }
 
+/**
+ * Barra lateral izquierda con accesos secundarios reales del juego.
+ * Solo links a pantallas que existen — sin botones placeholder.
+ */
 const ITEMS: readonly RailItem[] = [
-  { Icon: IconNews, label: "OPS", color: "var(--apex-orange)", badge: "NEW" },
-  { Icon: IconTarget, label: "RANGO", color: "var(--apex-cyan)" },
-  { Icon: IconCalendar, label: "TEMP", color: "var(--apex-purple)" },
-  { Icon: IconStore, label: "TIENDA", color: "var(--apex-gold)" },
+  {
+    Icon: IconNews,
+    label: "INTEL",
+    href: "/about",
+    color: "var(--apex-orange)",
+    ariaLabel: "Intel · cómo se juega",
+  },
+  {
+    Icon: IconTarget,
+    label: "PERFIL",
+    href: "/perfil",
+    color: "var(--apex-cyan)",
+    ariaLabel: "Perfil del operador",
+  },
 ];
 
-/**
- * Barra lateral izquierda con las acciones secundarias (Operaciones,
- * Rango, Temporada, Tienda). Botones cuadrados con clip diagonal,
- * acento de color a la izquierda y badge "NEW" sobre Operaciones.
- */
 export default function SideRail() {
-  const [toast, setToast] = useState<string | null>(null);
-
-  function showSoon(label: string) {
+  function tap() {
     sfxUiClick();
     hapticTap();
-    setToast(`${label} · PRÓXIMAMENTE`);
-    window.setTimeout(() => setToast(null), 1600);
   }
 
   return (
-    <nav className="side-rail" aria-label="Operaciones y misiones">
+    <nav className="side-rail" aria-label="Accesos directos">
       {ITEMS.map((it) => {
         const Icon = it.Icon;
         return (
-          <button
+          <Link
             key={it.label}
-            type="button"
+            href={it.href}
             className="side-rail-btn"
-            aria-label={it.label}
-            onClick={() => showSoon(it.label)}
+            aria-label={it.ariaLabel}
+            onClick={tap}
             style={{ ["--rb-color" as string]: it.color }}
           >
             <span className="sr-icon" aria-hidden>
               <Icon size={20} />
             </span>
             <span className="sr-label">{it.label}</span>
-            {it.badge && (
-              <span className="sr-badge" aria-hidden>
-                {it.badge}
-              </span>
-            )}
-          </button>
+          </Link>
         );
       })}
-      {toast && (
-        <div className="apex-toast left" role="status">
-          {toast}
-        </div>
-      )}
     </nav>
   );
 }

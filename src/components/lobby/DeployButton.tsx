@@ -39,6 +39,9 @@ export default function DeployButton({ mode, onClick, disabled }: Props) {
         <span className="d-label">DEPLOY</span>
         <span className="d-mode">{mode.title}</span>
       </span>
+      <span className="d-stamp" aria-hidden>
+        ▶ READY
+      </span>
       <span className="d-lights" aria-hidden>
         <span className="d-light" />
         <span className="d-light" />
