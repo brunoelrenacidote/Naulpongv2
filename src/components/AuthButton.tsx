@@ -14,6 +14,12 @@ import {
 } from "@/lib/luck-royale-client";
 import { COLLECTIBLE_ITEMS } from "@/lib/luck-royale";
 import { clearUnlocked, saveUnlocked } from "@/lib/unlocked-cache";
+import {
+  IconCloud,
+  IconGem,
+  IconSlotMachine,
+  IconTicket,
+} from "@/components/lobby/icons";
 
 /**
  * Botón de sesión para la página de Perfil.
@@ -75,7 +81,7 @@ export default function AuthButton() {
           className="console-btn cyan full"
           aria-label="Ir a la pantalla de inicio de sesión"
         >
-          ☁ INICIAR SESIÓN
+          <IconCloud size={14} /> INICIAR SESIÓN
         </Link>
       </div>
     );
@@ -93,12 +99,16 @@ export default function AuthButton() {
       {luck ? (
         <div className="auth-luck-row" aria-label="Estado del Luck Royale">
           <span className="auth-luck-pill gold" title="Boletos disponibles">
-            <span aria-hidden>🎟</span>
+            <span aria-hidden>
+              <IconTicket size={12} />
+            </span>
             <b>{luck.tickets}</b>
             <span>BOLETOS</span>
           </span>
           <span className="auth-luck-pill" title="Items desbloqueados">
-            <span aria-hidden>❖</span>
+            <span aria-hidden>
+              <IconGem size={12} />
+            </span>
             <b>
               {owned}/{total}
             </b>
@@ -111,7 +121,7 @@ export default function AuthButton() {
         className="console-btn cyan full"
         aria-label="Ir al Luck Royale"
       >
-        🎟 LUCK ROYALE
+        <IconSlotMachine size={14} /> LUCK ROYALE
       </Link>
       <button
         type="button"

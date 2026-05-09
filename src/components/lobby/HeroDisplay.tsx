@@ -11,7 +11,7 @@ import {
 } from "@/lib/character-storage";
 import type { CharacterId } from "@/lib/game-types";
 import { loadUnlocked, UNLOCKED_EVENT } from "@/lib/unlocked-cache";
-import { IconArrowLeft, IconArrowRight } from "./icons";
+import { IconArrowLeft, IconArrowRight, IconLock, IconTicket } from "./icons";
 
 const NAME: Record<CharacterId, string> = {
   "hijo-fiesta": "EL WEY",
@@ -104,7 +104,9 @@ export default function HeroDisplay() {
           <CharacterPreview id={id} scale={9} glow={color} />
           {isLocked ? (
             <div className="hero-lock-overlay" aria-hidden>
-              <span className="hero-lock-glyph">🔒</span>
+              <span className="hero-lock-glyph">
+                <IconLock size={28} />
+              </span>
               <span className="hero-lock-tag">BLOQUEADO</span>
             </div>
           ) : null}
@@ -129,7 +131,7 @@ export default function HeroDisplay() {
             className="hero-unlock-cta"
             aria-label="Ir al Luck Royale para desbloquear"
           >
-            🎟 DESBLOQUEAR EN LUCK ROYALE
+            <IconTicket size={14} /> DESBLOQUEAR EN LUCK ROYALE
           </Link>
         ) : null}
       </div>

@@ -16,6 +16,11 @@ import {
   pullLocal,
 } from "@/lib/auth-client";
 import { defaultStats } from "@/lib/stats";
+import {
+  IconCloud,
+  IconSettings,
+  IconSlotMachine,
+} from "@/components/lobby/icons";
 
 type Mode = "login" | "register";
 
@@ -264,7 +269,9 @@ export default function LoginScreen() {
                 <span className="console-panel-bracket bl" aria-hidden />
                 <span className="console-panel-bracket br" aria-hidden />
                 <h2 className="console-panel-title">
-                  <span className="glyph">☁</span>
+                  <span className="glyph">
+                    <IconCloud size={14} />
+                  </span>
                   OPERATOR ONLINE
                 </h2>
                 <div className="login-active">
@@ -278,13 +285,13 @@ export default function LoginScreen() {
                       href="/perfil"
                       className="console-btn cyan full"
                     >
-                      ⚙ IR AL PERFIL
+                      <IconSettings size={14} /> IR AL PERFIL
                     </Link>
                     <Link
                       href="/luck-royale"
                       className="console-btn full"
                     >
-                      🎟 LUCK ROYALE
+                      <IconSlotMachine size={14} /> LUCK ROYALE
                     </Link>
                     <button
                       type="button"
