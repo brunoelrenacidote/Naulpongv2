@@ -304,6 +304,11 @@
 .console-grid.grid-about {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
+/* Pantalla /login — 2 columnas: lore + roster | terminal de acceso. La
+   columna del terminal pesa un poco más para que el form quede prominente. */
+.console-grid.grid-login {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.1fr);
+}
 
 .console-col {
   display: flex;
@@ -1290,6 +1295,310 @@ a.console-statusbar-chip .arrow,
 }
 
 /* =====================================================================
+   Login screen — tabs, form, roster cards, sesión activa
+   ===================================================================== */
+
+/* Tabs ENTRAR / REGISTRARSE */
+.login-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: clamp(8px, 1.6vh, 14px);
+}
+.login-tab {
+  position: relative;
+  padding: 7px 8px 6px;
+  font-family: var(--console-mono);
+  font-size: clamp(8px, 1.7vw, 10px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--console-ink-mute);
+  background: var(--console-pane-soft);
+  border: 1px solid var(--console-line-2);
+  cursor: pointer;
+  clip-path: polygon(
+    8px 0,
+    100% 0,
+    calc(100% - 8px) 100%,
+    0 100%
+  );
+  -webkit-clip-path: polygon(
+    8px 0,
+    100% 0,
+    calc(100% - 8px) 100%,
+    0 100%
+  );
+  transition: color 140ms ease, border-color 140ms ease,
+    background 140ms ease, transform 140ms ease;
+}
+.login-tab:hover {
+  color: var(--console-ink);
+  transform: translateY(-1px);
+}
+.login-tab.active {
+  color: var(--console-cyan-2);
+  border-color: var(--console-cyan);
+  background: rgba(0, 212, 255, 0.1);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.25) inset;
+}
+.login-tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Form */
+.console-form {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(5px, 1vh, 9px);
+}
+.console-form-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--console-mono);
+  font-size: clamp(7px, 1.4vw, 9px);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--console-cyan);
+  margin-top: 2px;
+}
+.console-form-label .hintchar {
+  font-family: var(--console-mono);
+  font-size: 7.5px;
+  letter-spacing: 0.18em;
+  color: var(--console-ink-mute);
+  text-transform: uppercase;
+}
+.console-form-label .hintchar.pwtoggle {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 1px 4px;
+  cursor: pointer;
+  color: var(--console-cyan-2);
+  letter-spacing: 0.2em;
+}
+.console-form-label .hintchar.pwtoggle:hover {
+  color: var(--console-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Big primary button — variante alta del console-btn */
+.console-btn.big {
+  padding: 11px 16px;
+  font-size: clamp(10px, 2vw, 12px);
+  letter-spacing: 0.28em;
+}
+
+/* Status (error / ok) */
+.console-form-status {
+  min-height: 1.2em;
+}
+.console-form-status .status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 8px;
+  font-family: var(--console-tech);
+  font-size: clamp(11px, 2.1vw, 13px);
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  border: 1px solid var(--console-line-2);
+  background: rgba(255, 255, 255, 0.03);
+  clip-path: polygon(
+    6px 0,
+    100% 0,
+    calc(100% - 6px) 100%,
+    0 100%
+  );
+  -webkit-clip-path: polygon(
+    6px 0,
+    100% 0,
+    calc(100% - 6px) 100%,
+    0 100%
+  );
+  animation: console-fade-up 240ms ease-out both;
+}
+.console-form-status .status .badge {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-family: var(--console-mono);
+  font-size: 11px;
+  flex-shrink: 0;
+  clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 100%, 4px 100%);
+}
+.console-form-status .status.err {
+  border-color: rgba(239, 59, 59, 0.6);
+  color: #ffb6b6;
+  background: rgba(239, 59, 59, 0.08);
+}
+.console-form-status .status.err .badge {
+  background: var(--console-red);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(239, 59, 59, 0.6);
+}
+.console-form-status .status.ok {
+  border-color: rgba(74, 217, 135, 0.55);
+  color: #c8f5dc;
+  background: rgba(74, 217, 135, 0.08);
+}
+.console-form-status .status.ok .badge {
+  background: var(--console-green);
+  color: var(--console-bg-1);
+  box-shadow: 0 0 10px rgba(74, 217, 135, 0.6);
+}
+
+/* Hints (centrales debajo del CTA) */
+.console-form .hint {
+  margin: 0;
+  font-family: var(--console-tech);
+  font-size: clamp(11px, 2vw, 13px);
+  line-height: 1.3;
+  color: var(--console-ink-soft);
+}
+.console-form .hint.center { text-align: center; }
+.console-form .hint.muted { color: var(--console-ink-mute); }
+.console-form .hint .ilink {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: var(--console-mono);
+  font-size: 0.85em;
+  letter-spacing: 0.2em;
+  color: var(--console-cyan-2);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.console-form .hint .ilink:hover {
+  color: var(--console-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.console-form .hint .ilink:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Roster cards (col izquierda) */
+.login-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.login-roster-card {
+  --row-accent: var(--console-cyan);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border: 1px solid var(--console-line-2);
+  border-left: 3px solid var(--row-accent);
+  font-family: var(--console-tech);
+  letter-spacing: 0.02em;
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 100%,
+    8px 100%,
+    0 calc(100% - 8px)
+  );
+  -webkit-clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 100%,
+    8px 100%,
+    0 calc(100% - 8px)
+  );
+  animation: console-fade-up 500ms ease-out 220ms both;
+}
+.login-roster-card.cyan { --row-accent: var(--console-cyan); }
+.login-roster-card.orange { --row-accent: var(--console-orange); }
+.login-roster-card .emoji {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-size: 18px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--row-accent);
+  filter: drop-shadow(0 0 8px var(--row-accent));
+}
+.login-roster-card .ptext {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.login-roster-card .rname {
+  font-family: var(--console-display);
+  font-size: clamp(13px, 2.6vw, 16px);
+  letter-spacing: 0.04em;
+  color: var(--console-ink);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--row-accent) 35%, transparent);
+}
+.login-roster-card .rrole {
+  font-family: var(--console-mono);
+  font-size: 7.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--console-ink-mute);
+}
+
+/* Estado SESIÓN ACTIVA dentro de /login */
+.login-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 6px 0 2px;
+}
+.login-active .session-tag {
+  font-family: var(--console-mono);
+  font-size: 8px;
+  letter-spacing: 0.32em;
+  color: var(--console-ink-mute);
+  text-transform: uppercase;
+}
+.login-active .session-name {
+  font-family: var(--console-display);
+  font-size: clamp(22px, 4.6vw, 30px);
+  letter-spacing: 0.04em;
+  color: var(--console-gold);
+  text-shadow: 0 0 14px rgba(247, 201, 72, 0.55);
+}
+.login-active .hint {
+  font-family: var(--console-tech);
+  font-size: clamp(11px, 2vw, 13px);
+  color: var(--console-ink-soft);
+  margin: 0;
+  line-height: 1.3;
+  max-width: 36ch;
+}
+.login-active-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 280px;
+  margin-top: 4px;
+}
+
+/* =====================================================================
    Animaciones globales
    ===================================================================== */
 @keyframes console-fade-up {
@@ -1352,6 +1661,24 @@ a.console-statusbar-chip .arrow,
   .console-btn { padding: 5px 10px; font-size: 8.5px; }
   .console-auth .session-name { font-size: 13px; }
   .console-auth .hint { font-size: 9.5px; }
+  .login-tab { padding: 4px 6px 3px; font-size: 8px; }
+  .login-tabs { gap: 4px; margin-bottom: 5px; }
+  .console-form { gap: 4px; }
+  .console-form-label { font-size: 7px; margin-top: 0; }
+  .console-form-label .hintchar { font-size: 6.5px; }
+  .console-btn.big { padding: 6px 10px; font-size: 9px; }
+  .console-form-status .status { padding: 3px 6px; font-size: 10px; }
+  .console-form-status .status .badge { width: 14px; height: 14px; font-size: 9px; }
+  .console-form .hint { font-size: 9.5px; }
+  .login-roster { gap: 3px; }
+  .login-roster-card { padding: 4px 7px 4px 9px; gap: 7px; }
+  .login-roster-card .emoji { width: 22px; height: 22px; font-size: 13px; }
+  .login-roster-card .rname { font-size: 12px; }
+  .login-roster-card .rrole { font-size: 6.5px; }
+  .login-active { gap: 6px; padding: 2px 0 0; }
+  .login-active .session-name { font-size: 18px; }
+  .login-active .hint { font-size: 9.5px; }
+  .login-active-actions { gap: 4px; max-width: 220px; }
 }
 
 /* Tablet/desktop landscape ancho */
@@ -1367,7 +1694,8 @@ a.console-statusbar-chip .arrow,
 /* Portrait fallback (cuando rotate-lock está fuera, e.g., desktop angosto) */
 @media (orientation: portrait) {
   .console-grid.grid-perfil,
-  .console-grid.grid-about {
+  .console-grid.grid-about,
+  .console-grid.grid-login {
     grid-template-columns: minmax(0, 1fr);
   }
 }
