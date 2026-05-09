@@ -19,6 +19,7 @@ import {
   type LuckItemRarity,
 } from "@/lib/luck-royale";
 import { saveUnlocked } from "@/lib/unlocked-cache";
+import { sfxUiClick, hapticTap } from "@/lib/sounds";
 
 const RARITY_LABEL: Record<LuckItemRarity, string> = {
   common: "COMÚN",
@@ -26,16 +27,32 @@ const RARITY_LABEL: Record<LuckItemRarity, string> = {
   legendary: "LEGENDARY",
 };
 
+const REEL_GLYPHS: readonly string[] = LUCK_POOL.map((it) => it.glyph);
+/** Pad para que la tira sea suficientemente larga durante el spin. */
+const STRIP_LENGTH = 24;
+
+function makeRandomStrip(): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < STRIP_LENGTH; i++) {
+    out.push(REEL_GLYPHS[i % REEL_GLYPHS.length]);
+  }
+  return out;
+}
+
+function makeLandStrip(finalGlyph: string): string[] {
+  // El centro (índice 1) cae en la payline; rellenamos arriba/abajo con
+  // glyphs random que sirven de antesala visual.
+  const above = REEL_GLYPHS[Math.floor(Math.random() * REEL_GLYPHS.length)];
+  const below = REEL_GLYPHS[Math.floor(Math.random() * REEL_GLYPHS.length)];
+  return [above, finalGlyph, below];
+}
+
 /**
- * Pantalla del Luck Royale (gacha) — solo para usuarios con cuenta en
- * la nube. Reusa los tokens de console.css (bezel + hex grid + scan
- * beam + corner brackets + glitch title) que ya tienen `/perfil`,
- * `/about` y `/login`.
- *
- * - Sin sesión: muestra un panel "ACCESS DENIED" con CTA hacia /login.
- * - Con sesión: balance de boletos + grid del pool (collectibles
- *   bloqueados/desbloqueados) + terminal con botón GIRAR y reveal del
- *   último resultado.
+ * Pantalla del Luck Royale (gacha) — casino mini-arcade. Solo accesible
+ * para usuarios con cuenta en la nube. Marquee con luces persiguiéndose
+ * arriba, slot machine con cromo + 3 reels en el centro, palanca a la
+ * derecha (y un botón rojo grande siempre visible). Reveal card debajo
+ * y drawer de colección al final.
  */
 export default function LuckRoyaleScreen() {
   const [hydrated, setHydrated] = useState(false);
@@ -46,8 +63,10 @@ export default function LuckRoyaleScreen() {
   const [spinning, setSpinning] = useState(false);
   const [spinErr, setSpinErr] = useState<string | null>(null);
   const [last, setLast] = useState<SpinResult | null>(null);
+  const [coins, setCoins] = useState<number[]>([]);
 
   const revealRef = useRef<HTMLDivElement | null>(null);
+  const leverRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     setHydrated(true);
@@ -98,14 +117,17 @@ export default function LuckRoyaleScreen() {
 
   async function spin() {
     if (!session || !canSpin) return;
+    sfxUiClick();
+    hapticTap();
     setSpinErr(null);
     setSpinning(true);
     setLast(null);
     try {
-      // Pequeño delay sintético para que la animación se sienta.
       const [result] = await Promise.all([
         apiLuckRoyaleSpin(session.token),
-        new Promise<void>((r) => setTimeout(r, 1100)),
+        // Espera mínima para que las animaciones de los 3 reels alcancen
+        // a lucirse antes del reveal.
+        new Promise<void>((r) => setTimeout(r, 1400)),
       ]);
       setLast(result);
       setState((prev) =>
@@ -118,7 +140,15 @@ export default function LuckRoyaleScreen() {
           : prev,
       );
       saveUnlocked(result.unlockedItems);
-      // Scroll suave al reveal en mobile landscape.
+
+      if (result.item.rarity === "legendary" && !result.duplicate) {
+        // Coin shower: render 24 monedas con delay aleatorio.
+        const seeds: number[] = [];
+        for (let i = 0; i < 24; i++) seeds.push(Math.random());
+        setCoins(seeds);
+        window.setTimeout(() => setCoins([]), 1600);
+      }
+
       requestAnimationFrame(() => {
         revealRef.current?.scrollIntoView({
           block: "nearest",
@@ -133,62 +163,60 @@ export default function LuckRoyaleScreen() {
   }
 
   return (
-    <main className="console-screen">
+    <main className="casino-screen" aria-label="Luck Royale Casino">
       <div className="console-bg" aria-hidden />
       <div className="console-scan" aria-hidden />
-      <span className="console-glow tl" aria-hidden />
-      <span className="console-glow br" aria-hidden />
-      <div className="console-bezel" aria-hidden>
-        <span className="console-bezel-corner tl" />
-        <span className="console-bezel-corner tr" />
-        <span className="console-bezel-corner bl" />
-        <span className="console-bezel-corner br" />
-      </div>
 
-      <div className="console-content">
-        <header className="console-statusbar">
-          <Link href="/" className="chip" aria-label="Volver al lobby">
-            <span className="arrow" aria-hidden>
-              ◀
-            </span>
-            <span>LOBBY</span>
+      <div className="casino-shell">
+        {/* === Top status bar === */}
+        <header className="casino-statusbar">
+          <Link href="/" className="casino-back" aria-label="Volver al lobby">
+            ◀ LOBBY
           </Link>
-          <span className="chip cyan" aria-hidden>
-            <span>OPERATOR · LUCK ROYALE</span>
-            <span className="dot green" />
-          </span>
-          {hydrated && session ? (
-            <span
-              className="chip gold"
-              aria-label={`Boletos disponibles: ${tickets}`}
-            >
-              <span aria-hidden>🎟</span>
-              <span>{tickets} BOLETOS</span>
-            </span>
-          ) : null}
-        </header>
-
-        <section className="console-hero">
-          <span className="console-eyebrow">
-            [ LUCK ROYALE // SECCIÓN 03 ]
-          </span>
-          <h1 className="console-title" data-text="LUCK ROYALE">
-            LUCK ROYALE
-          </h1>
-          <p className="console-subtitle">
+          <div className="casino-counters" role="status">
             {hydrated && session ? (
               <>
-                Tirá boletos al gacha y desbloqueá a{" "}
-                <b>MORRO MAINCRAFTIANO</b>, skins de paleta y trails de
-                pelota. Cada giro cuesta <b>{spinCost}</b>.
+                <span
+                  className="casino-chip"
+                  aria-label={`Boletos disponibles: ${tickets}`}
+                >
+                  <span aria-hidden>🎟</span>
+                  <b>{tickets}</b> BOLETOS
+                </span>
+                <span
+                  className="casino-chip cyan"
+                  aria-label={`Items desbloqueados: ${collectedCount} de ${totalCollectibles}`}
+                >
+                  <span aria-hidden>❖</span>
+                  <b>
+                    {collectedCount}/{totalCollectibles}
+                  </b>{" "}
+                  ITEMS
+                </span>
               </>
             ) : (
-              <>
-                Acceso exclusivo para operadores con cuenta en la nube.
-                Iniciá sesión para empezar a coleccionar.
-              </>
+              <span className="casino-chip" aria-hidden>
+                <span>OFFLINE</span>
+              </span>
             )}
-          </p>
+          </div>
+        </header>
+
+        {/* === Hero marquee === */}
+        <section className="casino-marquee" aria-label="Cabecera del casino">
+          <span className="casino-marquee-sub">
+            <span className="casino-marquee-flank" aria-hidden>
+              ★
+            </span>{" "}
+            JACKPOT NIGHTS{" "}
+            <span className="casino-marquee-flank" aria-hidden>
+              ★
+            </span>
+          </span>
+          <h1 className="casino-marquee-title">LUCK ROYALE</h1>
+          <span className="casino-marquee-sub">
+            5 BOLETOS POR GIRO · MORRO MAINCRAFTIANO 5%
+          </span>
         </section>
 
         {!hydrated ? null : !session ? (
@@ -198,161 +226,276 @@ export default function LuckRoyaleScreen() {
         ) : !state ? (
           <LoadingPanel />
         ) : (
-          <div className="console-grid grid-luck">
-            {/* COL 1 — pool / inventario */}
-            <div className="console-col">
-              <section className="console-panel accent-purple">
-                <span className="console-panel-tag">{"// COLLECTION"}</span>
-                <span className="console-panel-bracket tl" aria-hidden />
-                <span className="console-panel-bracket tr" aria-hidden />
-                <span className="console-panel-bracket bl" aria-hidden />
-                <span className="console-panel-bracket br" aria-hidden />
-                <h2 className="console-panel-title">
-                  <span className="glyph">⚙</span>
-                  POOL · {collectedCount}/{totalCollectibles}
-                </h2>
-                <div className="luck-grid">
-                  {COLLECTIBLE_ITEMS.map((item) => (
-                    <LuckCard
-                      key={item.id}
-                      item={item}
-                      unlocked={unlocked.has(item.id)}
-                      highlighted={
-                        last?.item.id === item.id && !last.duplicate
-                      }
-                    />
-                  ))}
+          <>
+            {/* === Slot machine cabinet === */}
+            <section className="casino-cabinet" aria-label="Slot machine">
+              <span className="casino-cabinet-stud bl" aria-hidden />
+              <span className="casino-cabinet-stud br" aria-hidden />
+
+              <div className="casino-main">
+                <div className="casino-screen-frame">
+                  <div className="casino-reels" role="img" aria-label="Reels">
+                    {coins.length > 0 ? (
+                      <div className="casino-coins" aria-hidden>
+                        {coins.map((seed, i) => (
+                          <span
+                            key={i}
+                            className="casino-coin"
+                            style={{
+                              left: `${Math.floor(seed * 92) + 4}%`,
+                              animationDelay: `${(seed * 600).toFixed(0)}ms`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                    {[0, 1, 2].map((reelIdx) => (
+                      <Reel
+                        key={reelIdx}
+                        idx={reelIdx}
+                        spinning={spinning}
+                        landedGlyph={last?.item.glyph ?? null}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <p className="luck-fineprint">
-                  · El pool incluye además bonificaciones de boletos
-                  como consolation prize.
-                </p>
-              </section>
-            </div>
 
-            {/* COL 2 — terminal de giro */}
-            <div className="console-col">
-              <section className="console-panel accent-gold flex">
-                <span className="console-panel-tag">
-                  {"// SPIN TERMINAL"}
-                </span>
-                <span className="console-panel-bracket tl" aria-hidden />
-                <span className="console-panel-bracket tr" aria-hidden />
-                <span className="console-panel-bracket bl" aria-hidden />
-                <span className="console-panel-bracket br" aria-hidden />
-
-                <div className="luck-tickets">
-                  <span className="luck-tickets-label">BOLETOS</span>
+                <div className="casino-cost-row" aria-live="polite">
+                  <span className="casino-cost-label">COSTO POR GIRO</span>
                   <span
-                    className={`luck-tickets-value ${
-                      tickets < spinCost ? "low" : ""
+                    className={`casino-cost-value ${
+                      tickets < spinCost ? "warn" : ""
                     }`}
-                    aria-live="polite"
                   >
-                    {tickets}
+                    {spinCost} 🎟 ·{" "}
+                    {tickets < spinCost
+                      ? "BOLETOS INSUFICIENTES"
+                      : `BALANCE ${tickets}`}
                   </span>
-                  <span className="luck-tickets-cost">
-                    Costo por giro: <b>{spinCost}</b>
-                  </span>
-                </div>
-
-                <div
-                  ref={revealRef}
-                  className={`luck-reveal ${
-                    spinning ? "spinning" : ""
-                  } ${last ? `r-${last.item.rarity}` : ""}`}
-                  aria-live="polite"
-                >
-                  {spinning ? (
-                    <SpinAnimation />
-                  ) : last ? (
-                    <RevealCard result={last} />
-                  ) : (
-                    <span className="luck-reveal-empty">
-                      <span className="glyph">⌬</span>
-                      Tu próximo giro aparecerá acá.
-                    </span>
-                  )}
                 </div>
 
                 <button
                   type="button"
-                  className="console-btn cyan big full"
+                  className="casino-spin-btn"
                   onClick={spin}
                   disabled={!canSpin}
+                  aria-label={
+                    spinning
+                      ? "Girando reels"
+                      : `Tirar slot. Costo ${spinCost} boletos.`
+                  }
                 >
+                  <span className="coin" aria-hidden>
+                    🪙
+                  </span>
                   {spinning
                     ? "GIRANDO..."
                     : tickets < spinCost
-                      ? `BOLETOS INSUFICIENTES (${spinCost})`
-                      : `▶ GIRAR · ${spinCost} BOLETOS`}
+                      ? `BOLETOS INSUFICIENTES`
+                      : `TIRAR · ${spinCost} BOLETOS`}
+                  <span className="coin" aria-hidden>
+                    🪙
+                  </span>
                 </button>
 
-                <div className="console-form-status">
-                  {spinErr ? (
-                    <p className="status err" role="alert">
-                      <span className="badge">!</span>
-                      {spinErr}
-                    </p>
-                  ) : null}
-                </div>
+                {spinErr ? (
+                  <p
+                    role="alert"
+                    style={{
+                      color: "#ff9b9b",
+                      fontFamily: "var(--font-body, var(--body))",
+                      fontSize: 12,
+                      letterSpacing: "0.12em",
+                      margin: 0,
+                    }}
+                  >
+                    {spinErr}
+                  </p>
+                ) : null}
+              </div>
 
-                <p className="hint center muted">
-                  Ganás boletos jugando: <b>+1</b> por partida,{" "}
-                  <b>+1 extra</b> si ganás. Cooldown server-side de 30s
-                  entre créditos.
-                </p>
-              </section>
+              {/* === Lever (desktop) === */}
+              <div className="casino-lever-col">
+                <span className="casino-lever-tag">PALANCA</span>
+                <button
+                  ref={leverRef}
+                  type="button"
+                  className={`casino-lever${spinning ? " pulled" : ""}`}
+                  onClick={spin}
+                  disabled={!canSpin}
+                  aria-label={
+                    spinning
+                      ? "Girando reels (palanca tirada)"
+                      : "Tirar la palanca para girar"
+                  }
+                >
+                  <span className="casino-lever-rod" aria-hidden />
+                  <span className="casino-lever-knob" aria-hidden />
+                  <span className="casino-lever-base" aria-hidden />
+                </button>
+                <span className="casino-lever-tag">PULL</span>
+              </div>
+            </section>
 
-              <section className="console-panel accent-cyan">
-                <span className="console-panel-tag">{"// LINKS"}</span>
-                <span className="console-panel-bracket tl" aria-hidden />
-                <span className="console-panel-bracket tr" aria-hidden />
-                <span className="console-panel-bracket bl" aria-hidden />
-                <span className="console-panel-bracket br" aria-hidden />
-                <div className="login-active-actions">
-                  <Link href="/" className="console-btn cyan full">
-                    ▶ JUGAR PARA GANAR BOLETOS
-                  </Link>
-                  <Link href="/perfil" className="console-btn full">
-                    PERFIL
-                  </Link>
-                </div>
-              </section>
-            </div>
-          </div>
+            {/* === Reveal card === */}
+            <section
+              ref={revealRef}
+              className={`casino-reveal${
+                last ? ` r-${last.item.rarity}` : ""
+              }`}
+              aria-live="polite"
+            >
+              {last ? <RevealBody result={last} /> : <RevealEmpty />}
+            </section>
+
+            {/* === Collection drawer === */}
+            <section
+              className="casino-collection"
+              aria-label="Tu colección de items"
+            >
+              <header className="casino-collection-header">
+                <h2 className="casino-collection-title">📦 COLECCIÓN</h2>
+                <span className="casino-collection-progress">
+                  {collectedCount} / {totalCollectibles} desbloqueados
+                </span>
+              </header>
+              <div className="casino-collection-grid">
+                {COLLECTIBLE_ITEMS.map((item) => (
+                  <CollectionCard
+                    key={item.id}
+                    item={item}
+                    unlocked={unlocked.has(item.id)}
+                    flash={
+                      last?.item.id === item.id && !last.duplicate
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+
+            {/* === Footer === */}
+            <p className="casino-foot">
+              <span>
+                Ganás boletos jugando: <b>+1</b> por partida, <b>+1</b> si
+                ganás. Cooldown 30s.
+              </span>
+              <span>
+                <Link href="/">▶ JUGAR PARA GANAR BOLETOS</Link>
+                {" · "}
+                <Link href="/perfil">PERFIL</Link>
+              </span>
+            </p>
+          </>
         )}
       </div>
     </main>
   );
 }
 
-function LuckCard({
+function Reel({
+  idx,
+  spinning,
+  landedGlyph,
+}: {
+  idx: number;
+  spinning: boolean;
+  landedGlyph: string | null;
+}) {
+  // Usamos un pivote para forzar re-mount cuando empieza un giro nuevo,
+  // así el ::after de aterrizaje se reinicia en cada spin.
+  const stripKey = `${spinning ? "spin" : landedGlyph ?? "idle"}-${idx}`;
+  const strip = spinning
+    ? makeRandomStrip()
+    : landedGlyph
+      ? makeLandStrip(landedGlyph)
+      : makeLandStrip(REEL_GLYPHS[idx % REEL_GLYPHS.length]);
+
+  const cls = spinning
+    ? `casino-reel-strip spin spin-${idx}`
+    : landedGlyph
+      ? `casino-reel-strip land land-${idx}`
+      : "casino-reel-strip";
+
+  return (
+    <div className="casino-reel" aria-hidden>
+      <div key={stripKey} className={cls}>
+        {strip.map((g, i) => (
+          <span className="casino-reel-cell" key={`${stripKey}-${i}`}>
+            {g}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RevealBody({ result }: { result: SpinResult }) {
+  const isBonus = result.item.type === "bonus";
+  const headline = isBonus
+    ? `+${result.ticketsRefunded} BOLETOS`
+    : result.duplicate
+      ? "DUPLICADO"
+      : result.item.rarity === "legendary"
+        ? "JACKPOT!"
+        : "DESBLOQUEADO!";
+  return (
+    <>
+      <span className="casino-reveal-glyph" aria-hidden>
+        {result.item.glyph}
+      </span>
+      <div className="casino-reveal-body">
+        <span className="casino-reveal-rarity">
+          {RARITY_LABEL[result.item.rarity]}
+        </span>
+        <span className="casino-reveal-headline">{headline}</span>
+        <span className="casino-reveal-name">{result.item.name}</span>
+        <span className="casino-reveal-desc">
+          {result.duplicate
+            ? `Te devolvemos ${result.ticketsRefunded} boletos como rebate.`
+            : result.item.description}
+        </span>
+      </div>
+    </>
+  );
+}
+
+function RevealEmpty() {
+  return (
+    <span className="casino-reveal-empty">
+      <span aria-hidden>⌬</span>
+      Tirá la palanca para descubrir tu próximo premio.
+    </span>
+  );
+}
+
+function CollectionCard({
   item,
   unlocked,
-  highlighted,
+  flash,
 }: {
   item: LuckItem;
   unlocked: boolean;
-  highlighted: boolean;
+  flash: boolean;
 }) {
   return (
     <article
-      className={`luck-card r-${item.rarity} ${
-        unlocked ? "owned" : "locked"
-      } ${highlighted ? "flash" : ""}`}
+      className={`casino-card r-${item.rarity}${
+        unlocked ? "" : " locked"
+      }${flash ? " flash" : ""}`}
       data-item={item.id}
     >
-      <span className="luck-card-rarity">{RARITY_LABEL[item.rarity]}</span>
-      <span className="luck-card-glyph" aria-hidden>
+      <span className="casino-card-rarity">
+        {RARITY_LABEL[item.rarity]}
+      </span>
+      <span className="casino-card-glyph" aria-hidden>
         {unlocked ? item.glyph : "?"}
       </span>
-      <span className="luck-card-name">{item.name}</span>
-      <span className="luck-card-desc">
-        {unlocked ? item.description : "DESBLOQUEAR · gira en el terminal"}
+      <span className="casino-card-name">{item.name}</span>
+      <span className="casino-card-status">
+        {unlocked ? "DESBLOQUEADO" : "BLOQUEADO"}
       </span>
       {!unlocked ? (
-        <span className="luck-card-lock" aria-hidden>
+        <span className="casino-card-lock" aria-hidden>
           🔒
         </span>
       ) : null}
@@ -360,78 +503,30 @@ function LuckCard({
   );
 }
 
-function RevealCard({ result }: { result: SpinResult }) {
-  const isBonus = result.item.type === "bonus";
-  const headline = isBonus
-    ? `+${result.ticketsRefunded} BOLETOS`
-    : result.duplicate
-      ? "DUPLICADO"
-      : "DESBLOQUEADO";
-  return (
-    <div className={`luck-reveal-card r-${result.item.rarity}`}>
-      <span className="luck-reveal-rarity">
-        {RARITY_LABEL[result.item.rarity]}
-      </span>
-      <span className="luck-reveal-glyph" aria-hidden>
-        {result.item.glyph}
-      </span>
-      <span className="luck-reveal-name">{result.item.name}</span>
-      <span className="luck-reveal-headline">{headline}</span>
-      {result.duplicate ? (
-        <span className="luck-reveal-sub">
-          Te devolvemos {result.ticketsRefunded} boletos como rebate.
-        </span>
-      ) : isBonus ? (
-        <span className="luck-reveal-sub">{result.item.description}</span>
-      ) : (
-        <span className="luck-reveal-sub">{result.item.description}</span>
-      )}
-    </div>
-  );
-}
-
-function SpinAnimation() {
-  // Reel pseudo-random visual: tres columnas con glyphs del pool rotando.
-  const reels = [LUCK_POOL.map((i) => i.glyph), LUCK_POOL.map((i) => i.glyph), LUCK_POOL.map((i) => i.glyph)];
-  return (
-    <div className="luck-spin-reel" aria-hidden>
-      {reels.map((glyphs, ri) => (
-        <div className={`reel reel-${ri}`} key={ri}>
-          <div className="reel-strip">
-            {glyphs.concat(glyphs).map((g, i) => (
-              <span className="reel-glyph" key={`${ri}-${i}`}>
-                {g}
-              </span>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function NotLoggedPanel() {
   return (
-    <section className="console-panel accent-orange">
-      <span className="console-panel-tag">{"// ACCESS DENIED"}</span>
-      <span className="console-panel-bracket tl" aria-hidden />
-      <span className="console-panel-bracket tr" aria-hidden />
-      <span className="console-panel-bracket bl" aria-hidden />
-      <span className="console-panel-bracket br" aria-hidden />
-      <h2 className="console-panel-title">
-        <span className="glyph">!</span>
-        OPERATOR REQUIRED
-      </h2>
-      <p className="console-prose">
-        El Luck Royale es exclusivo para cuentas en la nube. Iniciá
-        sesión o registrate para que tus boletos e items se guarden de
-        forma segura, anti-cheese.
+    <section className="casino-locked" role="alert">
+      <span className="casino-locked-glyph" aria-hidden>
+        🔒
+      </span>
+      <h2 className="casino-locked-title">ACCESO RESTRINGIDO</h2>
+      <p className="casino-locked-desc">
+        El Luck Royale es exclusivo para operadores con cuenta en la nube.
+        Iniciá sesión o registrate para que tus boletos e items se guarden
+        de forma segura, anti-cheese.
       </p>
-      <div className="login-active-actions">
-        <Link href="/login" className="console-btn cyan big full">
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          flexWrap: "wrap",
+          justifyContent: "center",
+        }}
+      >
+        <Link href="/login" className="casino-link-btn">
           ▶ INICIAR SESIÓN
         </Link>
-        <Link href="/" className="console-btn full">
+        <Link href="/" className="casino-link-btn ghost">
           VOLVER AL LOBBY
         </Link>
       </div>
@@ -441,28 +536,26 @@ function NotLoggedPanel() {
 
 function ErrorPanel({ msg }: { msg: string }) {
   return (
-    <section className="console-panel accent-orange">
-      <span className="console-panel-tag">{"// ERROR"}</span>
-      <span className="console-panel-bracket tl" aria-hidden />
-      <span className="console-panel-bracket tr" aria-hidden />
-      <span className="console-panel-bracket bl" aria-hidden />
-      <span className="console-panel-bracket br" aria-hidden />
-      <p className="console-prose" role="alert">
-        <span className="hl-red">ERROR:</span> {msg}
-      </p>
+    <section className="casino-locked" role="alert">
+      <span className="casino-locked-glyph" aria-hidden>
+        ⚠
+      </span>
+      <h2 className="casino-locked-title">ERROR DEL CASINO</h2>
+      <p className="casino-locked-desc">{msg}</p>
+      <Link href="/" className="casino-link-btn ghost">
+        VOLVER AL LOBBY
+      </Link>
     </section>
   );
 }
 
 function LoadingPanel() {
   return (
-    <section className="console-panel accent-cyan">
-      <span className="console-panel-tag">{"// LOADING"}</span>
-      <span className="console-panel-bracket tl" aria-hidden />
-      <span className="console-panel-bracket tr" aria-hidden />
-      <span className="console-panel-bracket bl" aria-hidden />
-      <span className="console-panel-bracket br" aria-hidden />
-      <p className="console-prose">CARGANDO TERMINAL...</p>
+    <section className="casino-locked">
+      <span className="casino-locked-glyph" aria-hidden>
+        ⌛
+      </span>
+      <h2 className="casino-locked-title">CARGANDO TERMINAL...</h2>
     </section>
   );
 }
