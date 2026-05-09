@@ -2223,96 +2223,249 @@
    compacto se mantiene visible.
    ===================================================================== */
 
-/* Landscape mobile compacto (típico smartphone rotado) */
-@media (orientation: landscape) and (max-height: 520px) {
+/* Landscape phone — TIER U (ultra-low: Z Flip ~880x360, iPhone ~852x393, Galaxy ~854x393).
+   Pinta el lobby como una consola portátil: HUD top mínimo, news y feed-ticker fuera,
+   side-rail reducido a íconos, legend card 3-col interna a lo ancho, mode-tabs sin
+   subtítulo y DEPLOY CTA enorme tipo "PRESS START". */
+@media (orientation: landscape) and (max-height: 430px) {
   .apex-grid {
-    gap: 6px;
-    padding: 6px 10px;
+    gap: 4px;
+    padding:
+      max(4px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(4px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
   }
-  .apex-top { min-height: 38px; }
-  .apex-stage {
-    grid-template-columns: 42px minmax(0, 1fr) 168px;
+
+  /* TOP: chip-left + hud-right (battle-pass center oculto, no cabe sin aplastar) */
+  .apex-top {
+    grid-template-columns: 1fr auto;
+    min-height: 32px;
+    gap: 6px;
+  }
+  .apex-top > .apex-top-center { display: none; }
+  .apex-top > .apex-top-right { justify-self: end; }
+  .squad-chip {
+    padding: 4px 8px;
     gap: 8px;
+  }
+  .squad-chip .sq-eyebrow { display: none; }
+  .squad-chip .sq-tier { width: 26px; height: 26px; }
+  .squad-chip .sq-tier-num { font-size: 12px; }
+  .squad-chip .sq-nick { font-size: 12px; letter-spacing: 0.05em; }
+  .squad-chip .sq-stats { gap: 6px; font-size: 9px; }
+  .hud-controls { gap: 5px; }
+  .hud-btn { width: 32px; height: 32px; }
+  .hud-btn svg { width: 16px; height: 16px; }
+
+  /* STAGE: full-width + side-rail icon column. News panel afuera. */
+  .apex-stage {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 6px;
+    align-items: center;
+  }
+  .apex-news { display: none; }
+  .apex-rail { flex-direction: column; align-self: center; }
+  .side-rail { flex-direction: column; gap: 4px; }
+  .side-rail-btn {
+    width: 36px;
+    height: 36px;
+    padding: 2px;
+    flex-direction: column;
+    gap: 0;
+  }
+  .side-rail-btn .sr-icon svg { width: 14px; height: 14px; }
+  .side-rail-btn .sr-label { font-size: 6px; letter-spacing: 0.14em; }
+
+  /* LEGEND CARD — 3-col interna que ocupa todo el stage */
+  .legend-card {
+    grid-template-columns:
+      minmax(150px, 0.9fr)
+      minmax(0, 1.4fr)
+      minmax(150px, 1fr);
+    grid-template-rows: 1fr;
+    gap: 8px;
+    padding: 6px 10px;
+    align-items: stretch;
+    align-self: stretch;
+    height: 100%;
+    max-height: 100%;
+  }
+  /* Override min-height: 280 / max-height: 480 que arrastra desde el desktop
+     y rompe el flow vertical en pantallas ultra-bajas */
+  .legend-stats-side,
+  .legend-portrait-wrap,
+  .legend-info-side {
+    min-height: 0;
+    max-height: 100%;
+  }
+  .legend-stats-side,
+  .legend-info-side {
+    padding: 6px 8px;
+    gap: 4px;
+    overflow: hidden;
+  }
+  .legend-stats-side .stat-eyebrow,
+  .legend-info-side > .legend-codename {
+    /* Eyebrows ya implícitos en el layout — economizamos altura */
+  }
+  .legend-portrait-wrap { overflow: hidden; }
+  .legend-portrait-frame {
+    width: 100%;
+    max-width: clamp(140px, calc(100vh - 180px), 200px);
+    max-height: 100%;
+    aspect-ratio: 1 / 1;
+  }
+  .legend-cycle-btn { width: 28px; height: 28px; }
+  .legend-cycle-btn svg { width: 14px; height: 14px; }
+  .legend-flip {
+    width: 26px;
+    height: 26px;
+  }
+  .legend-flip.prev { left: -6px; }
+  .legend-flip.next { right: -6px; }
+  .legend-name {
+    font-size: clamp(20px, 6.5vh, 28px);
+    line-height: 1;
+  }
+  .legend-codename { font-size: 9px; }
+  .legend-tagline {
+    font-size: clamp(9px, 2.4vh, 11px);
+    line-height: 1.25;
+    /* En ultra-low cortamos a 2 líneas para que la skill quepa */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .stat-row { gap: 1px; }
+  .stat-row .stat-head { font-size: 9px; }
+  .stat-row .stat-bar { height: 5px; }
+  .stat-row .stat-val { font-size: 11px; }
+  .legend-skill { padding: 4px 6px; gap: 6px; }
+  .legend-skill .sk-glyph { width: 22px; height: 22px; }
+  .sk-name { font-size: 10px; line-height: 1; }
+  .sk-desc {
+    font-size: 9px;
+    line-height: 1.2;
+    /* Cortar la descripción a 2 líneas para no chocar con el footer */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .legend-stats-title { font-size: 9px; padding: 0 0 4px; }
+
+  /* BOTTOM — modos compactos + DEPLOY console-style */
+  .apex-bottom {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "modes deploy";
+    align-items: stretch;
+    gap: 6px;
+  }
+  .apex-bottom > .apex-bottom-modes { grid-area: modes; min-width: 0; }
+  .apex-bottom > .deploy-cta { grid-area: deploy; width: auto; }
+  .mode-tabs {
+    gap: 4px;
+    max-width: none;
+  }
+  .mode-tab {
+    min-height: 44px;
+    padding: 4px 6px 4px 10px;
+  }
+  .mode-tab .mt-tag { font-size: 7px; letter-spacing: 0.18em; }
+  .mode-tab .mt-title { font-size: 11px; line-height: 1; }
+  .mode-tab .mt-sub { display: none; }
+  .mode-tab .mt-icon { width: 16px; height: 16px; top: 4px; right: 6px; }
+
+  .deploy-cta {
+    min-height: 56px;
+    padding: 6px 18px 6px 12px;
+    gap: 8px;
+  }
+  .deploy-cta .d-glyph { width: 36px; height: 36px; }
+  .deploy-cta .d-glyph svg { width: 18px; height: 18px; }
+  .deploy-cta .d-eyebrow { font-size: 7px; letter-spacing: 0.22em; }
+  .deploy-cta .d-label {
+    font-size: clamp(20px, 6.5vh, 30px);
+    line-height: 1;
+  }
+  .deploy-cta .d-mode { font-size: 9px; letter-spacing: 0.16em; }
+  .deploy-cta .d-stamp {
+    top: 3px;
+    right: 4px;
+    font-size: 7px;
+    padding: 1px 4px;
+  }
+  .deploy-cta .d-lights { display: none; }
+
+  /* feed-ticker eats vertical space que necesitamos para el lobby */
+  .feed-ticker { display: none; }
+}
+
+/* Landscape phone — TIER U2 (Z Flip cover screen abierta o devices más anchos pero igual
+   bajos). Igual que U pero con un pelín más de aire si hay >= 740 px de ancho. */
+@media (orientation: landscape) and (max-height: 430px) and (min-width: 740px) {
+  .legend-portrait-frame { max-width: clamp(180px, 30vw, 240px); }
+  .deploy-cta { padding: 6px 22px 6px 14px; }
+}
+
+/* Landscape mobile estándar (iPad mini rotado, foldables abiertos en landscape
+   con más alto, etc.) — sólo cuando hay holgura vertical (431-720). */
+@media (orientation: landscape) and (min-height: 431px) and (max-height: 720px) and (max-width: 1180px) {
+  .apex-grid {
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  .apex-top { min-height: 44px; }
+  .apex-stage {
+    grid-template-columns: 48px minmax(0, 1fr) 200px;
+    gap: 10px;
   }
   .apex-news { display: flex; }
   .apex-rail { flex-direction: column; align-self: center; }
   .side-rail { flex-direction: column; gap: 6px; }
   .side-rail-btn {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     padding: 4px;
     flex-direction: column;
     gap: 0;
   }
-  .side-rail-btn .sr-label {
-    font-size: 7px;
-    letter-spacing: 0.16em;
-  }
+  .side-rail-btn .sr-label { font-size: 7px; letter-spacing: 0.16em; }
   .legend-card {
     grid-template-columns:
-      minmax(140px, 1fr)
+      minmax(150px, 1fr)
       minmax(0, 1.3fr)
-      minmax(140px, 1fr);
+      minmax(150px, 1fr);
     grid-template-rows: 1fr;
-    gap: 8px;
-    padding: 8px;
+    gap: 10px;
+    padding: 10px;
   }
-  .legend-stats-side,
-  .legend-info-side { padding: 8px 10px; }
-  .legend-portrait-frame { max-width: 170px; aspect-ratio: 1/1; }
-  .legend-name { font-size: 22px; }
-  .legend-codename { font-size: 9px; }
-  .legend-tagline { font-size: 10px; line-height: 1.3; }
-  .stat-row .stat-head { font-size: 9px; }
-  .stat-row .stat-bar { height: 6px; }
-  .legend-skill { padding: 8px 10px; }
-  .sk-name { font-size: 11px; }
-  .sk-desc { font-size: 9px; line-height: 1.3; }
+  .legend-portrait-frame { max-width: 220px; }
+  .legend-name { font-size: 24px; }
+  .legend-tagline { font-size: 11px; line-height: 1.35; }
+  .news-card { padding: 8px 10px; }
+  .news-title { font-size: 12px; }
+  .news-sub { font-size: 10px; line-height: 1.3; }
   .apex-bottom {
     grid-template-columns: 1fr auto;
     grid-template-areas: "modes deploy";
     align-items: end;
-    gap: 8px;
+    gap: 10px;
   }
   .apex-bottom > .apex-bottom-modes { grid-area: modes; }
   .apex-bottom > .deploy-cta { grid-area: deploy; width: auto; }
-  .mode-tabs { gap: 6px; max-width: none; }
-  .mode-tab { min-height: 50px; padding: 6px 8px 6px 14px; }
-  .mode-tab .mt-title { font-size: 12px; }
-  .mode-tab .mt-sub { display: none; }
-  .deploy-cta {
-    min-height: 54px;
-    padding: 10px 22px 10px 16px;
-  }
-  .deploy-cta .d-glyph { width: 36px; height: 36px; }
-  .deploy-cta .d-label { font-size: 20px; }
-  .deploy-cta .d-stamp { display: none; }
-  .news-card { padding: 8px 10px; }
-  .news-title { font-size: 12px; }
-  .news-sub { font-size: 9px; line-height: 1.3; }
-  .news-cta { font-size: 8px; padding: 3px 8px; }
-  .squad-chip .sq-eyebrow { display: none; }
-  .squad-chip .sq-nick { font-size: 12px; }
-  .squad-chip .sq-tier {
-    width: 30px;
-    height: 30px;
-  }
-  .squad-chip .sq-tier-num { font-size: 13px; }
+  .mode-tab { min-height: 52px; padding: 8px 10px 8px 14px; }
+  .mode-tab .mt-title { font-size: 13px; }
+  .deploy-cta { min-height: 58px; padding: 10px 24px 10px 16px; }
+  .deploy-cta .d-label { font-size: 22px; }
   .feed-ticker { font-size: 9px; padding: 3px 8px; height: 18px; }
   .feed-ticker .ft-tag { font-size: 7px; }
   .bp-progress-eyebrow { font-size: 8px; }
   .bp-progress-pct { font-size: 9px; }
   .hud-controls { gap: 6px; }
-  .hud-btn { width: 36px; height: 36px; }
-}
-
-/* Landscape mobile más alto (e.g. iPad mini rotado) — más respiro */
-@media (orientation: landscape) and (min-height: 521px) and (max-height: 720px) and (max-width: 1100px) {
-  .apex-stage {
-    grid-template-columns: 48px minmax(0, 1fr) 200px;
-    gap: 10px;
-  }
-  .legend-portrait-frame { max-width: 220px; }
+  .hud-btn { width: 38px; height: 38px; }
 }
 
 /* =====================================================================
