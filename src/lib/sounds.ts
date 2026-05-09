@@ -90,7 +90,13 @@ async function fetchSample(id: SampleId): Promise<AudioBuffer | null> {
   if (!c) return null;
   for (const ext of ["mp3", "ogg", "wav"] as const) {
     try {
-      const res = await fetch(sampleUrl(id, ext), { cache: "force-cache" });
+      // `no-cache` revalida con el server cada vez. El cache real del
+      // sample es el AudioBuffer en `SAMPLE_BUFFERS` (in-memory), así que
+      // sólo pagamos esta validación una vez por sesión por id. Antes
+      // usábamos `force-cache`, que cacheaba 404s viejos para siempre y
+      // hacía que la app siguiera sonando al fallback sintetizado aún
+      // después de subir los archivos a /public/sfx.
+      const res = await fetch(sampleUrl(id, ext), { cache: "no-cache" });
       if (!res.ok) continue;
       const ab = await res.arrayBuffer();
       const buf = await c.decodeAudioData(ab.slice(0));
@@ -148,6 +154,11 @@ function playSample(
   opts: { volume?: number } = {},
 ) {
   if (!isSfxOn()) return;
+  // Asegura que el AudioContext esté running y kick-off del preload de
+  // todos los samples. El lobby antes no llamaba a unlockAudio, así que
+  // el primer click siempre se loadeaba on-demand y se escuchaba el
+  // fallback sintetizado. Esto es idempotente.
+  unlockAudio();
   const c = getCtx();
   if (!c) {
     fallback();
