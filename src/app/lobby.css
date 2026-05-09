@@ -785,6 +785,19 @@ body.app-body {
   transform: translateY(1px);
 }
 
+.nav-bubble.gold {
+  border-color: rgba(247, 201, 72, 0.55);
+  color: var(--apex-gold, #f7c948);
+}
+.nav-bubble.gold:hover {
+  border-color: var(--apex-gold, #f7c948);
+  background: rgba(247, 201, 72, 0.08);
+  color: var(--ink);
+}
+.nav-bubble.gold .nb-glyph {
+  background: rgba(247, 201, 72, 0.1);
+}
+
 .nb-glyph {
   display: grid;
   place-items: center;

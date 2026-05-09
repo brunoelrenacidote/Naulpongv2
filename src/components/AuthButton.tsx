@@ -8,6 +8,11 @@ import {
   clearSession,
   loadSession,
 } from "@/lib/auth-client";
+import {
+  apiLuckRoyaleState,
+  type LuckRoyaleState,
+} from "@/lib/luck-royale-client";
+import { COLLECTIBLE_ITEMS } from "@/lib/luck-royale";
 
 /**
  * Botón de sesión para la página de Perfil.
@@ -19,6 +24,7 @@ import {
 export default function AuthButton() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [luck, setLuck] = useState<LuckRoyaleState | null>(null);
 
   useEffect(() => {
     setHydrated(true);
@@ -35,6 +41,14 @@ export default function AuthButton() {
         })
         .catch(() => {
           /* offline o endpoint deshabilitado: dejar la sesión local */
+        });
+      // Tickets + inventario para mostrar en el panel de sesión.
+      apiLuckRoyaleState(s.token)
+        .then((st) => {
+          if (st) setLuck(st);
+        })
+        .catch(() => {
+          /* opcional, sin DB no rompemos el panel */
         });
     }
     const onChange = () => setSession(loadSession());
@@ -63,10 +77,31 @@ export default function AuthButton() {
     );
   }
 
+  const owned = luck
+    ? COLLECTIBLE_ITEMS.filter((it) => luck.unlockedItems.includes(it.id)).length
+    : 0;
+  const total = COLLECTIBLE_ITEMS.length;
+
   return (
     <div className="console-auth">
       <span className="session-tag">SESIÓN ACTIVA</span>
       <span className="session-name">@{session.username}</span>
+      {luck ? (
+        <div className="auth-luck-row" aria-label="Estado del Luck Royale">
+          <span className="auth-luck-pill gold" title="Boletos disponibles">
+            <span aria-hidden>🎟</span>
+            <b>{luck.tickets}</b>
+            <span>BOLETOS</span>
+          </span>
+          <span className="auth-luck-pill" title="Items desbloqueados">
+            <span aria-hidden>❖</span>
+            <b>
+              {owned}/{total}
+            </b>
+            <span>ITEMS</span>
+          </span>
+        </div>
+      ) : null}
       <Link
         href="/luck-royale"
         className="console-btn cyan full"

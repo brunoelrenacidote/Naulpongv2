@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { IconNews, IconTarget } from "./icons";
+import { IconGem, IconNews, IconTarget } from "./icons";
 import { sfxUiClick, hapticTap } from "@/lib/sounds";
 
 interface RailItem {
@@ -30,6 +30,13 @@ const ITEMS: readonly RailItem[] = [
     href: "/perfil",
     color: "var(--apex-cyan)",
     ariaLabel: "Perfil del operador",
+  },
+  {
+    Icon: IconGem,
+    label: "LUCK",
+    href: "/luck-royale",
+    color: "var(--apex-gold, #f7c948)",
+    ariaLabel: "Luck Royale · gacha de items",
   },
 ];
 
