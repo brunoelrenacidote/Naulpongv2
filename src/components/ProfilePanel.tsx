@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import {
   ACHIEVEMENTS,
   Achievement,
@@ -94,7 +94,7 @@ function NickEditor({
   );
 }
 
-export default function ProfilePanel() {
+export default function ProfilePanel({ cloudSync }: { cloudSync?: ReactNode }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [unlocked, setUnlocked] = useState<Set<AchievementId>>(new Set());
   const [nick, setNick] = useState<string>("");
@@ -109,19 +109,21 @@ export default function ProfilePanel() {
 
   if (!hydrated || !stats) {
     return (
-      <section
-        className="console-panel accent-cyan"
-        style={{ animationDelay: "200ms" } as React.CSSProperties}
-      >
-        <span className="console-panel-tag">{"// LOADING"}</span>
-        <span className="console-panel-bracket tl" aria-hidden />
-        <span className="console-panel-bracket tr" aria-hidden />
-        <span className="console-panel-bracket bl" aria-hidden />
-        <span className="console-panel-bracket br" aria-hidden />
-        <p className="console-prose" aria-live="polite">
-          <span className="hl-cyan">CARGANDO DOSSIER...</span>
-        </p>
-      </section>
+      <div className="console-grid grid-perfil">
+        <section
+          className="console-panel accent-cyan flex"
+          style={{ gridColumn: "1 / -1" } as React.CSSProperties}
+        >
+          <span className="console-panel-tag">{"// LOADING"}</span>
+          <span className="console-panel-bracket tl" aria-hidden />
+          <span className="console-panel-bracket tr" aria-hidden />
+          <span className="console-panel-bracket bl" aria-hidden />
+          <span className="console-panel-bracket br" aria-hidden />
+          <p className="console-prose" aria-live="polite">
+            <span className="hl-cyan">CARGANDO DOSSIER...</span>
+          </p>
+        </section>
+      </div>
     );
   }
 
@@ -129,175 +131,194 @@ export default function ProfilePanel() {
   const totalUnlocked = achievements.filter((a) => unlocked.has(a.id)).length;
 
   return (
-    <>
-      <section
-        className="console-panel accent-cyan"
-        style={{ animationDelay: "200ms" } as React.CSSProperties}
-      >
-        <span className="console-panel-tag">{"// IDENTITY"}</span>
-        <span className="console-panel-bracket tl" aria-hidden />
-        <span className="console-panel-bracket tr" aria-hidden />
-        <span className="console-panel-bracket bl" aria-hidden />
-        <span className="console-panel-bracket br" aria-hidden />
-        <h2 className="console-panel-title">
-          <span className="glyph">⚙</span>
-          OPERATOR ID
-        </h2>
-        <NickEditor initial={nick} onChange={(n) => setNick(n)} />
-      </section>
+    <div className="console-grid grid-perfil">
+      {/* COL 1: Identity + VS Bot + Cloud Sync */}
+      <div className="console-col">
+        <section
+          className="console-panel accent-cyan"
+          style={{ animationDelay: "200ms" } as React.CSSProperties}
+        >
+          <span className="console-panel-tag">{"// IDENTITY"}</span>
+          <span className="console-panel-bracket tl" aria-hidden />
+          <span className="console-panel-bracket tr" aria-hidden />
+          <span className="console-panel-bracket bl" aria-hidden />
+          <span className="console-panel-bracket br" aria-hidden />
+          <h2 className="console-panel-title">
+            <span className="glyph">⚙</span>
+            OPERATOR ID
+          </h2>
+          <NickEditor initial={nick} onChange={(n) => setNick(n)} />
+        </section>
 
-      <section
-        className="console-panel accent-orange"
-        style={{ animationDelay: "260ms" } as React.CSSProperties}
-      >
-        <span className="console-panel-tag">{"// COMBAT STATS"}</span>
-        <span className="console-panel-bracket tl" aria-hidden />
-        <span className="console-panel-bracket tr" aria-hidden />
-        <span className="console-panel-bracket bl" aria-hidden />
-        <span className="console-panel-bracket br" aria-hidden />
-        <h2 className="console-panel-title">
-          <span className="glyph">▲</span>
-          ESTADÍSTICAS
-        </h2>
-        <div className="console-stat-grid">
-          <Stat label="PARTIDOS" value={String(stats.matches)} delay={160} />
-          <Stat
-            label="VICTORIAS"
-            value={String(stats.wins)}
-            color="green"
-            delay={200}
-          />
-          <Stat
-            label="DERROTAS"
-            value={String(stats.losses)}
-            color="red"
-            delay={240}
-          />
-          <Stat
-            label="% VICTORIA"
-            value={`${winRate(stats)}%`}
-            color="gold"
-            delay={280}
-          />
-          <Stat
-            label="RACHA"
-            value={String(stats.currentStreak)}
-            color="cyan"
-            delay={320}
-          />
-          <Stat
-            label="MEJOR RACHA"
-            value={String(stats.bestStreak)}
-            color="gold"
-            delay={360}
-          />
-          <Stat label="GOLES +" value={String(stats.goalsFor)} delay={400} />
-          <Stat label="GOLES –" value={String(stats.goalsAgainst)} delay={440} />
-          <Stat
-            label="POWER-UPS"
-            value={String(stats.powerUpsTaken)}
-            color="pink"
-            delay={480}
-          />
-          <Stat
-            label="SHUTOUTS"
-            value={String(stats.shutoutWins)}
-            color="green"
-            delay={520}
-          />
-          <Stat
-            label="MÁS RÁPIDA"
-            value={
-              stats.fastestWinMs == null
-                ? "—"
-                : formatDuration(stats.fastestWinMs)
-            }
-            delay={560}
-          />
-          <Stat
-            label="TIEMPO TOTAL"
-            value={formatDuration(stats.totalPlayMs)}
-            delay={600}
-          />
-        </div>
-      </section>
+        <section
+          className="console-panel accent-purple"
+          style={{ animationDelay: "260ms" } as React.CSSProperties}
+        >
+          <span className="console-panel-tag">{"// VS BOT"}</span>
+          <span className="console-panel-bracket tl" aria-hidden />
+          <span className="console-panel-bracket tr" aria-hidden />
+          <span className="console-panel-bracket bl" aria-hidden />
+          <span className="console-panel-bracket br" aria-hidden />
+          <h2 className="console-panel-title">
+            <span className="glyph">⌬</span>
+            VS BOT
+          </h2>
+          <div className="console-stat-grid cols-3">
+            <Stat
+              label="FÁCIL"
+              value={String(stats.vsBotWins.easy)}
+              color="green"
+              delay={160}
+            />
+            <Stat
+              label="MEDIO"
+              value={String(stats.vsBotWins.medium)}
+              color="gold"
+              delay={220}
+            />
+            <Stat
+              label="DIFÍCIL"
+              value={String(stats.vsBotWins.hard)}
+              color="red"
+              delay={280}
+            />
+          </div>
+        </section>
 
-      <section
-        className="console-panel accent-purple"
-        style={{ animationDelay: "320ms" } as React.CSSProperties}
-      >
-        <span className="console-panel-tag">{"// VS BOT"}</span>
-        <span className="console-panel-bracket tl" aria-hidden />
-        <span className="console-panel-bracket tr" aria-hidden />
-        <span className="console-panel-bracket bl" aria-hidden />
-        <span className="console-panel-bracket br" aria-hidden />
-        <h2 className="console-panel-title">
-          <span className="glyph">⌬</span>
-          VICTORIAS VS BOT
-        </h2>
-        <div className="console-stat-grid cols-3">
-          <Stat
-            label="FÁCIL"
-            value={String(stats.vsBotWins.easy)}
-            color="green"
-            delay={160}
-          />
-          <Stat
-            label="MEDIO"
-            value={String(stats.vsBotWins.medium)}
-            color="gold"
-            delay={220}
-          />
-          <Stat
-            label="DIFÍCIL"
-            value={String(stats.vsBotWins.hard)}
-            color="red"
-            delay={280}
-          />
-        </div>
-      </section>
+        {cloudSync}
+      </div>
 
-      <section
-        className="console-panel accent-gold"
-        style={{ animationDelay: "380ms" } as React.CSSProperties}
-      >
-        <span className="console-panel-tag">{"// ACHIEVEMENTS"}</span>
-        <span className="console-panel-bracket tl" aria-hidden />
-        <span className="console-panel-bracket tr" aria-hidden />
-        <span className="console-panel-bracket bl" aria-hidden />
-        <span className="console-panel-bracket br" aria-hidden />
-        <h2 className="console-panel-title">
-          <span className="glyph">★</span>
-          LOGROS
-          <span className="console-counter-pill" aria-label="Logros desbloqueados">
-            {totalUnlocked} / {achievements.length}
-          </span>
-        </h2>
-        <ul className="console-achievement-list">
-          {achievements.map((a, i) => {
-            const got = unlocked.has(a.id);
-            return (
-              <li
-                key={a.id}
-                className={`console-achievement ${got ? "unlocked" : ""}`}
-                style={{
-                  animationDelay: `${200 + i * 60}ms`,
-                  animation: "console-fade-up 500ms ease-out both",
-                } as React.CSSProperties}
-              >
-                <span className="star" aria-hidden>
-                  {got ? "★" : "☆"}
-                </span>
-                <div className="flex flex-col">
-                  <span className="name">{a.name}</span>
-                  <span className="desc">{a.description}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-    </>
+      {/* COL 2: Combat stats (12 tiles) */}
+      <div className="console-col">
+        <section
+          className="console-panel accent-orange flex"
+          style={{ animationDelay: "300ms" } as React.CSSProperties}
+        >
+          <span className="console-panel-tag">{"// COMBAT STATS"}</span>
+          <span className="console-panel-bracket tl" aria-hidden />
+          <span className="console-panel-bracket tr" aria-hidden />
+          <span className="console-panel-bracket bl" aria-hidden />
+          <span className="console-panel-bracket br" aria-hidden />
+          <h2 className="console-panel-title">
+            <span className="glyph">▲</span>
+            ESTADÍSTICAS
+          </h2>
+          <div className="console-panel-body">
+            <div className="console-stat-grid">
+              <Stat label="PARTIDOS" value={String(stats.matches)} delay={160} />
+              <Stat
+                label="VICTORIAS"
+                value={String(stats.wins)}
+                color="green"
+                delay={200}
+              />
+              <Stat
+                label="DERROTAS"
+                value={String(stats.losses)}
+                color="red"
+                delay={240}
+              />
+              <Stat
+                label="% VICTORIA"
+                value={`${winRate(stats)}%`}
+                color="gold"
+                delay={280}
+              />
+              <Stat
+                label="RACHA"
+                value={String(stats.currentStreak)}
+                color="cyan"
+                delay={320}
+              />
+              <Stat
+                label="MEJOR RACHA"
+                value={String(stats.bestStreak)}
+                color="gold"
+                delay={360}
+              />
+              <Stat label="GOLES +" value={String(stats.goalsFor)} delay={400} />
+              <Stat
+                label="GOLES –"
+                value={String(stats.goalsAgainst)}
+                delay={440}
+              />
+              <Stat
+                label="POWER-UPS"
+                value={String(stats.powerUpsTaken)}
+                color="pink"
+                delay={480}
+              />
+              <Stat
+                label="SHUTOUTS"
+                value={String(stats.shutoutWins)}
+                color="green"
+                delay={520}
+              />
+              <Stat
+                label="MÁS RÁPIDA"
+                value={
+                  stats.fastestWinMs == null
+                    ? "—"
+                    : formatDuration(stats.fastestWinMs)
+                }
+                delay={560}
+              />
+              <Stat
+                label="TIEMPO TOTAL"
+                value={formatDuration(stats.totalPlayMs)}
+                delay={600}
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* COL 3: Logros (lista con scroll interno) */}
+      <div className="console-col">
+        <section
+          className="console-panel accent-gold flex"
+          style={{ animationDelay: "360ms" } as React.CSSProperties}
+        >
+          <span className="console-panel-tag">{"// ACHIEVEMENTS"}</span>
+          <span className="console-panel-bracket tl" aria-hidden />
+          <span className="console-panel-bracket tr" aria-hidden />
+          <span className="console-panel-bracket bl" aria-hidden />
+          <span className="console-panel-bracket br" aria-hidden />
+          <h2 className="console-panel-title">
+            <span className="glyph">★</span>
+            LOGROS
+            <span className="count" aria-label="Logros desbloqueados">
+              {totalUnlocked}/{achievements.length}
+            </span>
+          </h2>
+          <div className="console-panel-body">
+            <ul className="console-achievement-list">
+              {achievements.map((a, i) => {
+                const got = unlocked.has(a.id);
+                return (
+                  <li
+                    key={a.id}
+                    className={`console-achievement ${got ? "unlocked" : ""}`}
+                    style={{
+                      animationDelay: `${200 + i * 50}ms`,
+                      animation: "console-fade-up 500ms ease-out both",
+                    } as React.CSSProperties}
+                  >
+                    <span className="star" aria-hidden>
+                      {got ? "★" : "☆"}
+                    </span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="name">{a.name}</span>
+                      <span className="desc">{a.description}</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }
 
