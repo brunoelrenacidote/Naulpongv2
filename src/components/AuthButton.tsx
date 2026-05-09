@@ -67,6 +67,13 @@ export default function AuthButton() {
     <div className="console-auth">
       <span className="session-tag">SESIÓN ACTIVA</span>
       <span className="session-name">@{session.username}</span>
+      <Link
+        href="/luck-royale"
+        className="console-btn cyan full"
+        aria-label="Ir al Luck Royale"
+      >
+        🎟 LUCK ROYALE
+      </Link>
       <button
         type="button"
         className="console-btn danger full"

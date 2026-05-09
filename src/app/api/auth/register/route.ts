@@ -7,22 +7,24 @@ import {
   isValidPassword,
   isValidUsername,
 } from "@/lib/auth";
-import type { Stats } from "@/lib/stats";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 interface Body {
   username?: string;
   password?: string;
-  initialStats?: Stats | null;
+  // initialStats fue removido a propósito — ver comentario en el handler.
 }
 
 /**
  * POST /api/auth/register
  * Crea un usuario nuevo. Devuelve { token, username }.
- * Si initialStats viene en el body, se guarda como las stats iniciales del
- * usuario (caso típico: alguien jugó local y ahora se registra → no pierde stats).
+ *
+ * Anti-cheese: ya NO acepta initialStats del cliente. Si alguien edita
+ * localStorage para inflar stats y después crea cuenta, esa cuenta arranca
+ * limpia (0 partidas, sin logros, sin boletos, sin items). Los puntos que
+ * jugó offline antes del registro no se traen — para sincronizarse hay que
+ * jugar logueado.
  */
 export async function POST(req: Request) {
   if (!isDbConfigured() || !isAuthConfigured()) {
@@ -71,8 +73,13 @@ export async function POST(req: Request) {
     passHash,
     createdAt: now,
     updatedAt: now,
-    stats: body.initialStats ?? null,
+    // Cuenta limpia. Ver comentario arriba (anti-cheese de stats locales).
+    stats: null,
     unlocked: [] as string[],
+    // Luck Royale state. lastCreditAt se setea en el primer crédito.
+    tickets: 0,
+    unlockedItems: [] as string[],
+    lastCreditAt: null as Date | null,
   };
   const res = await users.insertOne(doc);
   const token = await issueToken({

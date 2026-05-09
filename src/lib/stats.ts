@@ -143,6 +143,18 @@ export function saveStats(s: Stats) {
   }
 }
 
+/**
+ * Devuelve una copia profunda del estado por defecto. Útil al crear
+ * una cuenta nueva (anti-cheese: no queremos arrastrar lo que había
+ * en localStorage como "stats reales" del nuevo usuario).
+ */
+export function defaultStats(): Stats {
+  return {
+    ...DEFAULT_STATS,
+    vsBotWins: { ...DEFAULT_STATS.vsBotWins },
+  };
+}
+
 export function loadUnlocked(): Set<AchievementId> {
   if (typeof window === "undefined") return new Set();
   try {

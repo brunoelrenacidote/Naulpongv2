@@ -62,15 +62,20 @@ async function readError(res: Response): Promise<string> {
   }
 }
 
+/**
+ * Registro de cuenta nueva. Anti-cheese: NO se mandan stats locales al
+ * server. Si alguien editó localStorage para inflar stats, esa cuenta
+ * arranca limpia y los items del Luck Royale (Morro Maincraftiano, skins,
+ * trails) se ganan jugando logueado, no llegan "trampeados".
+ */
 export async function apiRegister(
   username: string,
   password: string,
-  initialStats: Stats | null,
 ): Promise<AuthSession> {
   const res = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ username, password, initialStats }),
+    body: JSON.stringify({ username, password }),
   });
   if (!res.ok) throw new Error(await readError(res));
   const data = (await res.json()) as AuthSession;

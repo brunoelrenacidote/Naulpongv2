@@ -23,6 +23,7 @@ import {
   mergeStats,
   pullLocal,
 } from "@/lib/auth-client";
+import { defaultStats } from "@/lib/stats";
 
 const NICK_KEY = "naulpong:nick";
 const NICK_MAX = 12;
@@ -104,12 +105,16 @@ export default function AuthGate({ onEntered }: Props) {
     }
     setBusy(true);
     try {
-      const local = pullLocal();
-      const sess = await apiRegister(user.trim(), pass, local.stats);
+      // Anti-cheese: cuenta nueva = stats limpias. No mandamos lo de
+      // localStorage al server, y reseteamos el navegador para que el
+      // dossier no muestre stats viejas como del nuevo usuario.
+      const sess = await apiRegister(user.trim(), pass);
+      const empty = defaultStats();
+      applyToLocal(empty, []);
       try {
-        await apiPushStats(sess.token, local.stats, local.unlocked);
+        await apiPushStats(sess.token, empty, []);
       } catch {
-        /* swallow */
+        /* swallow — cuenta ya creada server-side con stats:null */
       }
       window.localStorage.setItem(NICK_KEY, sess.username.toUpperCase());
       onEntered(sess.username);

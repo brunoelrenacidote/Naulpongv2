@@ -15,6 +15,7 @@ import {
   mergeStats,
   pullLocal,
 } from "@/lib/auth-client";
+import { defaultStats } from "@/lib/stats";
 
 type Mode = "login" | "register";
 
@@ -86,12 +87,17 @@ export default function LoginScreen() {
     setBusy(true);
     try {
       if (mode === "register") {
-        const local = pullLocal();
-        const sess = await apiRegister(username, pass, local.stats);
+        // Anti-cheese: no mandamos stats locales al server. La cuenta
+        // arranca limpia (ver apiRegister + /api/auth/register). Además
+        // reseteamos el localStorage para que el navegador no siga
+        // mostrando los counters viejos como si fueran del nuevo usuario.
+        const sess = await apiRegister(username, pass);
+        const empty = defaultStats();
+        applyToLocal(empty, []);
         try {
-          await apiPushStats(sess.token, local.stats, local.unlocked);
+          await apiPushStats(sess.token, empty, []);
         } catch {
-          /* swallow */
+          /* swallow — el server ya tiene la cuenta creada con stats:null */
         }
         setOkMsg(`CUENTA CREADA · @${sess.username}`);
         router.push("/perfil");
@@ -273,6 +279,12 @@ export default function LoginScreen() {
                       className="console-btn cyan full"
                     >
                       ⚙ IR AL PERFIL
+                    </Link>
+                    <Link
+                      href="/luck-royale"
+                      className="console-btn full"
+                    >
+                      🎟 LUCK ROYALE
                     </Link>
                     <button
                       type="button"
