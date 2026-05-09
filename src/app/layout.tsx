@@ -10,6 +10,7 @@ import "./lobby.css";
 import "./apex.css";
 import "./arena.css";
 import "./entry.css";
+import "./console.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import BottomNav from "@/components/BottomNav";
 import MusicToggle from "@/components/MusicToggle";
