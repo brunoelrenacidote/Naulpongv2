@@ -172,6 +172,82 @@ const CLAVEL_SAD: Sprite = {
   }),
 };
 
+// === MORRO MAINCRAFTIANO ===
+// Cabeza estilo bloque tipo Minecraft: borde marrón, piel pixel, ojos
+// negros, boca tipo trapecio. Es solo un fallback procedural — los PNGs
+// reales viven en /public/sprites/morro-maincraftiano-*.png y son los
+// que se ven cuando están cargados (sprite-loader.ts).
+//   '.' transparente  'D' marrón oscuro (borde / pelo)  'd' marrón medio
+//   'S' piel  's' sombra de piel  'K' negro (ojo)
+//   'M' boca  'F' frown (sad)  'H' happy mouth (verde claro)
+//   'P' overlay glow verde minecraft
+const MORRO_PAL: Palette = {
+  ".": null,
+  D: "#3a2410",
+  d: "#6b4322",
+  S: "#f0c89a",
+  s: "#c79870",
+  K: DARK,
+  M: "#3a1c0e",
+  F: "#9b3636",
+  H: "#7cd35c",
+  P: "#7cd35c",
+};
+
+const MORRO_IDLE: Sprite = {
+  w: 16,
+  h: 18,
+  palette: MORRO_PAL,
+  rows: [
+    "................", // 0
+    "..DDDDDDDDDDDD..", // 1 borde superior del bloque
+    ".DDDDDDDDDDDDDD.", // 2
+    ".DDDDDDDDDDDDDD.", // 3 pelo bloque
+    ".DSSSSSSSSSSSSD.", // 4 frente
+    ".DSSSSSSSSSSSSD.", // 5
+    ".DSSKKSSSSKKSSD.", // 6 ojos cuadrados
+    ".DSSKKSSSSKKSSD.", // 7
+    ".DSSSSSSSSSSSSD.", // 8
+    ".DSSSSSSssSSSSD.", // 9 nariz
+    ".DSSsSSSSSSsSSD.", // 10
+    ".DSSSSMMMMSSSSD.", // 11 boca trapecio
+    ".DSSSMMMMMMSSSD.", // 12
+    ".DDDDDDDDDDDDDD.", // 13 mentón / borde inf
+    "..dddddddddddd..", // 14 cuello
+    "..dddddddddddd..", // 15
+    "................", // 16
+    "................", // 17
+  ],
+};
+
+const MORRO_BLINK: Sprite = {
+  ...MORRO_IDLE,
+  rows: MORRO_IDLE.rows.map((row, i) => {
+    if (i === 6) return ".DSSDDSSSSDDSSD."; // ojos cerrados
+    if (i === 7) return ".DSSSSSSSSSSSSD.";
+    return row;
+  }),
+};
+
+const MORRO_HAPPY: Sprite = {
+  ...MORRO_IDLE,
+  rows: MORRO_IDLE.rows.map((row, i) => {
+    if (i === 11) return ".DSSSHHHHHHSSSD."; // sonrisa verde
+    if (i === 12) return ".DSSSSHHHHSSSSD.";
+    return row;
+  }),
+};
+
+const MORRO_SAD: Sprite = {
+  ...MORRO_IDLE,
+  rows: MORRO_IDLE.rows.map((row, i) => {
+    if (i === 11) return ".DSSSSFFFFSSSSD."; // boca chica triste
+    if (i === 12) return ".DSSSFFFFFFSSSD.";
+    if (i === 7) return ".DSSKKSSSSKKSSD."; // ojos un poco más cerrados
+    return row;
+  }),
+};
+
 const SPRITES: Record<CharacterId, Record<Pose, Sprite>> = {
   "hijo-fiesta": {
     idle: HIJO_IDLE,
@@ -184,6 +260,12 @@ const SPRITES: Record<CharacterId, Record<Pose, Sprite>> = {
     blink: CLAVEL_BLINK,
     happy: CLAVEL_HAPPY,
     sad: CLAVEL_SAD,
+  },
+  "morro-maincraftiano": {
+    idle: MORRO_IDLE,
+    blink: MORRO_BLINK,
+    happy: MORRO_HAPPY,
+    sad: MORRO_SAD,
   },
 };
 

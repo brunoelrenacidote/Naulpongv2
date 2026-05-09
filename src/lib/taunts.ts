@@ -62,6 +62,38 @@ const TAUNTS: Record<CharacterId, Record<TauntEvent, string[]>> = {
       "Ire a cagar",
     ],
   },
+  "morro-maincraftiano": {
+    goal: [
+      "GG EZ",
+      "Crítico!",
+      "Diamante!",
+      "Skill issue, hermano",
+      "Te creepié la pelota",
+      "+1 EXP",
+      "Speedrun any%",
+    ],
+    takeGoal: [
+      "Lag!",
+      "Mi mochila está llena...",
+      "Otra vez la creeper",
+      "Re host bro",
+      "Mods rotos",
+    ],
+    win: [
+      "VICTORY ROYALE",
+      "Saqué diamantes",
+      "GG WP",
+      "Pls pls pls",
+      "Refresca el server",
+    ],
+    lose: [
+      "Reportado",
+      "Fue lag",
+      "Voy a llorar a TikTok",
+      "Mi mamá me llama",
+      "Me bugueó",
+    ],
+  },
 };
 
 export function pickTaunt(id: CharacterId, event: TauntEvent): string {

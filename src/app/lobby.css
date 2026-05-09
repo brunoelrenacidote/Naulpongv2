@@ -1024,10 +1024,64 @@ body.app-body {
 }
 
 .hero-character-wrap {
+  position: relative;
   display: grid;
   place-items: center;
   filter: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.55));
   flex-shrink: 0;
+}
+
+.hero-character-wrap.is-locked > :first-child {
+  filter: grayscale(0.85) brightness(0.55);
+}
+
+.hero-lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-auto-flow: row;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  pointer-events: none;
+  background: radial-gradient(
+    60% 60% at 50% 50%,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+}
+
+.hero-lock-glyph {
+  font-size: 28px;
+  text-shadow: 0 0 12px rgba(247, 201, 72, 0.6);
+}
+
+.hero-lock-tag {
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--apex-gold, #f7c948);
+  text-shadow: 0 0 8px rgba(247, 201, 72, 0.6);
+}
+
+.hero-unlock-cta {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 4px 10px;
+  font-family: var(--display);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--apex-gold, #f7c948);
+  text-decoration: none;
+  border: 1px solid rgba(247, 201, 72, 0.55);
+  background: rgba(247, 201, 72, 0.08);
+  border-radius: 3px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+.hero-unlock-cta:hover {
+  color: var(--ink);
+  border-color: var(--apex-gold, #f7c948);
+  background: rgba(247, 201, 72, 0.18);
 }
 
 .hero-flip {

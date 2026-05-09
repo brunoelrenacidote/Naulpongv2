@@ -13,6 +13,7 @@ import {
   type LuckRoyaleState,
 } from "@/lib/luck-royale-client";
 import { COLLECTIBLE_ITEMS } from "@/lib/luck-royale";
+import { clearUnlocked, saveUnlocked } from "@/lib/unlocked-cache";
 
 /**
  * Botón de sesión para la página de Perfil.
@@ -45,7 +46,10 @@ export default function AuthButton() {
       // Tickets + inventario para mostrar en el panel de sesión.
       apiLuckRoyaleState(s.token)
         .then((st) => {
-          if (st) setLuck(st);
+          if (st) {
+            setLuck(st);
+            saveUnlocked(st.unlockedItems);
+          }
         })
         .catch(() => {
           /* opcional, sin DB no rompemos el panel */
@@ -114,6 +118,7 @@ export default function AuthButton() {
         className="console-btn danger full"
         onClick={() => {
           clearSession();
+          clearUnlocked();
           setSession(null);
         }}
         aria-label="Cerrar sesión"

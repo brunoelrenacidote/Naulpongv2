@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import CharacterPreview from "@/components/CharacterPreview";
-import { loadCharacter, saveCharacter } from "@/lib/character-storage";
+import {
+  CHARACTER_ORDER,
+  isCharacterUnlocked,
+  loadCharacter,
+  saveCharacter,
+} from "@/lib/character-storage";
 import type { CharacterId } from "@/lib/game-types";
+import { loadUnlocked, UNLOCKED_EVENT } from "@/lib/unlocked-cache";
 import { IconArrowLeft, IconArrowRight } from "./icons";
 import {
   IconBoltTactical,
@@ -12,8 +19,6 @@ import {
   IconScope,
 } from "./tactical-icons";
 import { sfxLegendCycle, hapticTap } from "@/lib/sounds";
-
-const ALL: CharacterId[] = ["hijo-fiesta", "clavel"];
 
 interface LegendData {
   codename: string;
@@ -57,6 +62,20 @@ const LEGENDS: Record<CharacterId, LegendData> = {
       desc: "Turbo Ball gana +10% de velocidad inicial al activarse.",
     },
   },
+  "morro-maincraftiano": {
+    codename: "[ Block-Crit · 64 ]",
+    name: "EL MORRO",
+    tagline: "Speedrun any%. Saca diamantes y matchpoints.",
+    color: "#7cd35c",
+    speed: 78,
+    control: 84,
+    power: 70,
+    defense: 64,
+    skill: {
+      name: "Crítico minero",
+      desc: "1 de cada 6 golpes con Turbo Ball anota +1 punto extra.",
+    },
+  },
 };
 
 /**
@@ -70,17 +89,32 @@ const LEGENDS: Record<CharacterId, LegendData> = {
 export default function LegendCard() {
   const [id, setId] = useState<CharacterId>("hijo-fiesta");
   const [hydrated, setHydrated] = useState(false);
+  const [unlocked, setUnlocked] = useState<readonly string[]>([]);
 
   useEffect(() => {
     setId(loadCharacter());
+    setUnlocked(loadUnlocked());
     setHydrated(true);
+    const onChange = () => setUnlocked(loadUnlocked());
+    window.addEventListener(UNLOCKED_EVENT, onChange);
+    return () => window.removeEventListener(UNLOCKED_EVENT, onChange);
   }, []);
 
+  const isLocked = useMemo(
+    () => !isCharacterUnlocked(id, unlocked),
+    [id, unlocked],
+  );
+
   function cycle(dir: 1 | -1) {
-    const idx = ALL.indexOf(id);
-    const next = ALL[(idx + dir + ALL.length) % ALL.length];
+    const all = CHARACTER_ORDER;
+    const idx = all.indexOf(id);
+    const next = all[(idx + dir + all.length) % all.length];
     setId(next);
-    saveCharacter(next);
+    // Persistimos sólo si está desbloqueado: el lobby no quiere arrancar
+    // mostrando un personaje lockeado.
+    if (isCharacterUnlocked(next, unlocked)) {
+      saveCharacter(next);
+    }
     sfxLegendCycle();
     hapticTap();
   }
@@ -117,17 +151,27 @@ export default function LegendCard() {
           <IconArrowLeft size={18} />
         </button>
 
-        <div className="legend-portrait-frame">
+        <div
+          className={`legend-portrait-frame${
+            isLocked ? " is-locked" : ""
+          }`}
+        >
           <div className="legend-portrait-rays" aria-hidden />
           <div className="legend-portrait-tags" aria-hidden>
             <span className="tag">
-              <span className="dot" /> READY
+              <span className="dot" /> {isLocked ? "LOCKED" : "READY"}
             </span>
             <span className="tag">SECTOR-7</span>
           </div>
           <div className="legend-portrait-glow" aria-hidden />
           <div className="legend-portrait-canvas">
             <CharacterPreview id={id} scale={9} glow={color} />
+            {isLocked ? (
+              <div className="legend-lock-overlay" aria-hidden>
+                <span className="legend-lock-glyph">🔒</span>
+                <span className="legend-lock-tag">BLOQUEADO</span>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -158,6 +202,16 @@ export default function LegendCard() {
             <span className="sk-desc">{data.skill.desc}</span>
           </span>
         </div>
+
+        {isLocked ? (
+          <Link
+            href="/luck-royale"
+            className="legend-unlock-cta"
+            aria-label="Ir al Luck Royale para desbloquear"
+          >
+            🎟 DESBLOQUEAR EN LUCK ROYALE
+          </Link>
+        ) : null}
       </aside>
     </div>
   );

@@ -46,8 +46,12 @@ export function saveSession(s: AuthSession) {
 export function clearSession() {
   window.localStorage.removeItem(TOKEN_KEY);
   window.localStorage.removeItem(USER_KEY);
+  // El cache de items desbloqueados es solo válido para la sesión actual;
+  // si entra otro operador después, debe rehidratarse de la nube.
+  window.localStorage.removeItem("naulpong:unlocked-items:v1");
   try {
     window.dispatchEvent(new CustomEvent("naulpong:auth-changed"));
+    window.dispatchEvent(new CustomEvent("naulpong:unlocked-changed"));
   } catch {
     /* ignore */
   }

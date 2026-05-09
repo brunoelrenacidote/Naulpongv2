@@ -70,7 +70,18 @@ export const POWER_GLYPHS: Record<PowerId, string> = {
   invert: "I",
 };
 
-export type CharacterId = "hijo-fiesta" | "clavel";
+export type CharacterId = "hijo-fiesta" | "clavel" | "morro-maincraftiano";
+
+/**
+ * Personajes "base" — cualquiera los puede usar sin desbloquear nada.
+ * Morro Maincraftiano queda fuera de esta lista porque viene del Luck
+ * Royale (cloud-only) y se añade al pool sólo cuando el usuario lo
+ * desbloqueó (el cliente envía `prefChar=` en el join al worker).
+ */
+export const BASE_CHARACTERS: readonly CharacterId[] = [
+  "hijo-fiesta",
+  "clavel",
+] as const;
 
 export const CHARACTERS: Record<
   CharacterId,
@@ -88,7 +99,24 @@ export const CHARACTERS: Record<
     color: "#ff5c8a",
     emoji: "🌹",
   },
+  "morro-maincraftiano": {
+    id: "morro-maincraftiano",
+    name: "MORRO MAINCRAFTIANO",
+    color: "#7cd35c",
+    emoji: "⛏",
+  },
 };
+
+/**
+ * Type-guard para validar `prefChar` recibido del cliente en el worker.
+ */
+export function isCharacterId(value: unknown): value is CharacterId {
+  return (
+    value === "hijo-fiesta" ||
+    value === "clavel" ||
+    value === "morro-maincraftiano"
+  );
+}
 
 export type Phase =
   | "WAITING"
@@ -209,10 +237,21 @@ export function newBall(serveTo: Side): BallState {
   };
 }
 
-export function pickRandomCharacters(): { left: CharacterId; right: CharacterId } {
-  const ids: CharacterId[] = ["hijo-fiesta", "clavel"];
-  if (Math.random() < 0.5) ids.reverse();
-  return { left: ids[0], right: ids[1] };
+export function pickRandomCharacters(
+  prefs?: { left?: CharacterId | null; right?: CharacterId | null },
+): { left: CharacterId; right: CharacterId } {
+  // Default fallback: el WEY vs el CLAVEL (mismo comportamiento legacy).
+  const fallback: CharacterId[] = ["hijo-fiesta", "clavel"];
+  if (Math.random() < 0.5) fallback.reverse();
+
+  const left = prefs?.left ?? fallback[0];
+  let right = prefs?.right ?? fallback[1];
+  // Si ambos eligieron el mismo personaje, el lado derecho usa el “otro”
+  // base para que el match no sea espejo.
+  if (left === right) {
+    right = left === "hijo-fiesta" ? "clavel" : "hijo-fiesta";
+  }
+  return { left, right };
 }
 
 export function pickRandomStage(): StageId {

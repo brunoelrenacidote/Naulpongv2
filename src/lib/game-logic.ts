@@ -45,7 +45,11 @@ export function createInitialState(now: number): GameState {
   };
 }
 
-export function startCountdown(state: GameState, now: number) {
+export function startCountdown(
+  state: GameState,
+  now: number,
+  prefs?: Parameters<typeof pickRandomCharacters>[0],
+) {
   state.phase = "COUNTDOWN";
   state.countdownEndsAt = now + 3000;
   state.scores = { left: 0, right: 0 };
@@ -57,7 +61,7 @@ export function startCountdown(state: GameState, now: number) {
   state.speedMulUntil = 0;
   state.winner = null;
   state.rematchVotes = { left: false, right: false };
-  state.characters = pickRandomCharacters();
+  state.characters = pickRandomCharacters(prefs);
   state.stage = pickRandomStage();
 }
 
