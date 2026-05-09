@@ -10,6 +10,7 @@ import {
   mergeStats,
   pullLocal,
 } from "@/lib/auth-client";
+import { defaultStats } from "@/lib/stats";
 
 type Mode = "login" | "register";
 
@@ -21,8 +22,12 @@ interface Props {
 
 /**
  * Modal de login / registro. Usuario + contraseña, sin email.
- * - Crear cuenta: manda las stats locales actuales como initialStats.
+ * - Crear cuenta: arranca limpia (anti-cheese, no pushea stats locales).
  * - Login: pulla stats del server, mergea con las locales y empuja el merge.
+ *
+ * Nota: en /perfil este modal fue reemplazado por la página dedicada
+ * /login. Lo dejamos por compatibilidad si alguien lo monta en otro
+ * lugar — el comportamiento de registro coincide con LoginScreen.tsx.
  */
 export default function AuthModal({ open, onClose, onAuthed }: Props) {
   const [mode, setMode] = useState<Mode>("login");
@@ -57,13 +62,16 @@ export default function AuthModal({ open, onClose, onAuthed }: Props) {
     setBusy(true);
     try {
       if (mode === "register") {
-        const local = pullLocal();
-        const sess = await apiRegister(user.trim(), pass, local.stats);
-        // Después del registro, también guardamos los unlocked locales en server.
+        // Anti-cheese: cuenta nueva = stats limpias. Reseteamos también
+        // el localStorage del navegador para que no muestre los counters
+        // del usuario anterior como si fueran del nuevo.
+        const sess = await apiRegister(user.trim(), pass);
+        const empty = defaultStats();
+        applyToLocal(empty, []);
         try {
-          await apiPushStats(sess.token, local.stats, local.unlocked);
+          await apiPushStats(sess.token, empty, []);
         } catch {
-          /* swallow */
+          /* swallow — el server ya tiene la cuenta creada con stats:null */
         }
         onAuthed(sess.username);
         onClose();

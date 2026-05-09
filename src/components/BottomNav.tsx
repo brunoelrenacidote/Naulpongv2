@@ -48,6 +48,8 @@ export default function BottomNav() {
   // El /login es una pantalla console-style con su propio status bar y
   // CTA de "volver al lobby"; el BottomNav rompe la estética del HUD.
   if (pathname.startsWith("/login")) return null;
+  // El /luck-royale es console-style también; hide BottomNav.
+  if (pathname.startsWith("/luck-royale")) return null;
 
   return (
     <nav className="bottom-nav v2" aria-label="Navegación principal">

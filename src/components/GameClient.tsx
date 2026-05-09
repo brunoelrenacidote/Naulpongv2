@@ -64,6 +64,7 @@ import {
 } from "@/lib/sounds";
 import { Achievement, recordMatch } from "@/lib/stats";
 import { apiPushStats, loadSession } from "@/lib/auth-client";
+import { apiPlayCredit } from "@/lib/luck-royale-client";
 
 interface Props {
   code: string;
@@ -396,6 +397,11 @@ export default function GameClient({ code, mode, botDifficulty }: Props) {
           result.newStats,
           allUnlocked as never,
         ).catch(() => {
+          /* offline ok */
+        });
+        // Crédito de boletos para el Luck Royale. El server aplica
+        // cooldown anti-spam, así que esto es safe de llamar acá.
+        apiPlayCredit(session.token, won).catch(() => {
           /* offline ok */
         });
       }
