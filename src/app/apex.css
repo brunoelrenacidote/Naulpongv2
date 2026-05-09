@@ -2679,3 +2679,482 @@
     filter: none;
   }
 }
+
+/* =====================================================================
+   APEX SPLASH (boot screen táctico)
+   Reemplaza el splash UdderGames presenta por una pantalla de
+   secuencia de deploy con corner brackets, hex grid, scan beam,
+   boot log staggered y logo glitch. Vive dentro de `.entry-stage`
+   pero cubre con su propio background así no se ve la capa anterior.
+   ===================================================================== */
+
+.apex-splash {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: clamp(16px, 3.5vh, 28px) clamp(20px, 4vw, 48px);
+  gap: clamp(10px, 2vh, 20px);
+  font-family: var(--apex-body);
+  color: var(--apex-ink);
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(120% 70% at 80% 0%, rgba(255, 90, 31, 0.18) 0%, transparent 55%),
+    radial-gradient(140% 90% at 0% 100%, rgba(0, 212, 255, 0.16) 0%, transparent 60%),
+    linear-gradient(180deg, #04070d 0%, #02040a 60%, #050912 100%);
+  animation: apex-splash-in 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes apex-splash-in {
+  from { opacity: 0; transform: scale(1.012); filter: brightness(1.4); }
+  to   { opacity: 1; transform: scale(1);     filter: brightness(1);   }
+}
+
+/* Hex grid + scanlines + vignette */
+.apex-splash-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    /* hex grid */
+    linear-gradient(120deg, transparent 0 calc(50% - 0.5px), rgba(0, 212, 255, 0.07) 0 calc(50% + 0.5px), transparent 0),
+    linear-gradient(60deg, transparent 0 calc(50% - 0.5px), rgba(0, 212, 255, 0.07) 0 calc(50% + 0.5px), transparent 0),
+    linear-gradient(0deg, transparent 0 calc(50% - 0.5px), rgba(255, 255, 255, 0.04) 0 calc(50% + 0.5px), transparent 0),
+    /* scanlines finitas */
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px);
+  background-size: 36px 60px, 36px 60px, 36px 60px, auto auto;
+  mask-image: radial-gradient(ellipse at 50% 55%, #000 0%, rgba(0,0,0,0.7) 60%, transparent 92%);
+  opacity: 0.85;
+}
+
+/* Beam vertical que cruza una sola vez al boot */
+.apex-splash-scan {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(0, 212, 255, 0.04) 38%,
+      rgba(0, 212, 255, 0.55) 50%,
+      rgba(0, 212, 255, 0.04) 62%,
+      transparent 100%
+    );
+  mix-blend-mode: screen;
+  transform: translateX(-110%);
+  animation: apex-splash-beam 1800ms cubic-bezier(0.4, 0, 0.6, 1) 200ms 1 both;
+  filter: blur(0.5px);
+  opacity: 0.9;
+}
+@keyframes apex-splash-beam {
+  0%   { transform: translateX(-110%); opacity: 0; }
+  20%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(110%);  opacity: 0; }
+}
+
+/* Corner brackets gruesos tipo HUD */
+.apex-splash-corner {
+  position: absolute;
+  width: clamp(28px, 5.5vw, 56px);
+  height: clamp(28px, 5.5vw, 56px);
+  pointer-events: none;
+  border: 2px solid var(--apex-orange);
+  filter: drop-shadow(0 0 6px rgba(255, 90, 31, 0.5));
+  animation: apex-splash-corner-in 480ms ease-out 120ms both;
+}
+.apex-splash-corner.tl { top: 14px; left: 14px;  border-right: 0; border-bottom: 0; }
+.apex-splash-corner.tr { top: 14px; right: 14px; border-left: 0;  border-bottom: 0; border-color: var(--apex-cyan); filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.55)); }
+.apex-splash-corner.bl { bottom: 14px; left: 14px;  border-right: 0; border-top: 0; border-color: var(--apex-cyan); filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.55)); }
+.apex-splash-corner.br { bottom: 14px; right: 14px; border-left: 0;  border-top: 0; }
+
+@keyframes apex-splash-corner-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+/* Top bar: publisher tag + version chip */
+.apex-splash-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--apex-mono);
+  font-size: clamp(8px, 1.5vh, 10px);
+  letter-spacing: 0.18em;
+  color: var(--apex-ink-soft);
+  text-transform: uppercase;
+}
+.apex-splash-publisher {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--apex-pane-soft);
+  border: 1px solid var(--apex-line-2);
+  clip-path: var(--apex-clip-tr);
+}
+.apex-splash-publisher .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--apex-orange);
+  box-shadow: 0 0 8px rgba(255, 90, 31, 0.85);
+  animation: apex-splash-pulse-dot 1200ms ease-in-out infinite;
+}
+@keyframes apex-splash-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.85); }
+}
+.apex-splash-publisher .lbl { color: var(--apex-ink); }
+
+.apex-splash-version {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--apex-pane-soft);
+  border: 1px solid var(--apex-line-cyan);
+  clip-path: var(--apex-clip-bl);
+  color: var(--apex-cyan-2);
+}
+.apex-splash-version .live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: rgba(74, 217, 135, 0.16);
+  border: 1px solid rgba(74, 217, 135, 0.55);
+  color: var(--apex-green);
+  letter-spacing: 0.2em;
+  border-radius: 2px;
+}
+.apex-splash-version .live .pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--apex-green);
+  box-shadow: 0 0 6px var(--apex-green);
+  animation: apex-splash-pulse-dot 900ms ease-in-out infinite;
+}
+
+/* Centro: eyebrow + título glitch + sub */
+.apex-splash-stage {
+  align-self: center;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(8px, 1.6vh, 14px);
+  text-align: center;
+  padding: 8px 0;
+}
+.apex-splash-eyebrow {
+  font-family: var(--apex-mono);
+  font-size: clamp(9px, 1.4vh, 12px);
+  letter-spacing: 0.3em;
+  color: var(--apex-orange);
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(255, 90, 31, 0.4);
+  animation: apex-splash-fade-in 600ms ease-out 220ms both;
+}
+
+.apex-splash-title {
+  position: relative;
+  margin: 0;
+  font-family: var(--apex-display);
+  font-weight: 900;
+  font-size: clamp(48px, 11vh, 96px);
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+  color: var(--apex-ink);
+  text-shadow:
+    0 0 20px rgba(0, 212, 255, 0.25),
+    0 0 60px rgba(255, 90, 31, 0.15);
+  animation: apex-splash-fade-in 600ms ease-out 360ms both;
+}
+.apex-splash-title::before,
+.apex-splash-title::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.85;
+  text-shadow: none;
+}
+.apex-splash-title::before {
+  color: var(--apex-cyan);
+  transform: translate(-2px, 0);
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  animation: apex-splash-glitch-a 2.2s steps(1) 700ms infinite;
+}
+.apex-splash-title::after {
+  color: var(--apex-orange);
+  transform: translate(2px, 0);
+  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  animation: apex-splash-glitch-b 2.6s steps(1) 700ms infinite;
+}
+@keyframes apex-splash-glitch-a {
+  0%, 92%  { transform: translate(-2px, 0); clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%); }
+  93%      { transform: translate(-6px, 0); clip-path: polygon(0 8%, 100% 8%, 100% 28%, 0 28%); }
+  95%      { transform: translate(-3px, -1px); clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); }
+  97%      { transform: translate(-2px, 0); clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%); }
+}
+@keyframes apex-splash-glitch-b {
+  0%, 88%  { transform: translate(2px, 0); clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%); }
+  90%      { transform: translate(5px, 1px); clip-path: polygon(0 70%, 100% 70%, 100% 90%, 0 90%); }
+  92%      { transform: translate(2px, 0); clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%); }
+}
+
+.apex-splash-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--apex-mono);
+  font-size: clamp(9px, 1.5vh, 13px);
+  letter-spacing: 0.42em;
+  color: var(--apex-gold);
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(247, 201, 72, 0.4);
+  animation: apex-splash-fade-in 700ms ease-out 520ms both;
+}
+.apex-splash-sub .bar {
+  width: clamp(36px, 6vw, 64px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--apex-gold), transparent);
+}
+
+@keyframes apex-splash-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Footer: boot log + progress + tip */
+.apex-splash-foot {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: clamp(8px, 1.4vh, 14px);
+  font-family: var(--apex-mono);
+  font-size: clamp(9px, 1.4vh, 11px);
+  letter-spacing: 0.12em;
+  color: var(--apex-ink-soft);
+}
+
+/* Boot log estilo terminal */
+.apex-splash-boot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: clamp(10px, 1.5vh, 14px) clamp(12px, 2vw, 18px);
+  list-style: none;
+  background: var(--apex-pane);
+  border: 1px solid var(--apex-line-2);
+  clip-path: var(--apex-clip);
+  max-height: clamp(96px, 18vh, 160px);
+  overflow: hidden;
+}
+.apex-splash-boot .boot-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 200ms ease-out, transform 240ms ease-out;
+  text-transform: uppercase;
+}
+.apex-splash-boot .boot-line.is-on {
+  opacity: 1;
+  transform: translateY(0);
+}
+.apex-splash-boot .boot-tag {
+  flex-shrink: 0;
+  min-width: 56px;
+  text-align: center;
+  padding: 1px 4px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  color: var(--apex-cyan);
+  letter-spacing: 0.2em;
+  font-size: 0.85em;
+}
+.apex-splash-boot .tag-ok .boot-tag {
+  background: rgba(74, 217, 135, 0.1);
+  border-color: rgba(74, 217, 135, 0.45);
+  color: var(--apex-green);
+}
+.apex-splash-boot .tag-boot .boot-tag {
+  background: rgba(255, 90, 31, 0.1);
+  border-color: rgba(255, 90, 31, 0.45);
+  color: var(--apex-orange);
+}
+.apex-splash-boot .tag-net .boot-tag {
+  background: rgba(176, 97, 255, 0.1);
+  border-color: rgba(176, 97, 255, 0.45);
+  color: var(--apex-purple);
+}
+.apex-splash-boot .tag-auth .boot-tag {
+  background: rgba(247, 201, 72, 0.1);
+  border-color: rgba(247, 201, 72, 0.45);
+  color: var(--apex-gold);
+}
+.apex-splash-boot .tag-sys .boot-tag {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--apex-ink);
+}
+.apex-splash-boot .boot-text { color: var(--apex-ink); }
+.apex-splash-boot .caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  margin-left: 4px;
+  vertical-align: middle;
+  background: var(--apex-cyan);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.7);
+  animation: apex-splash-caret 800ms steps(1) infinite;
+}
+@keyframes apex-splash-caret {
+  0%, 50%   { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* Progress bar muy fina */
+.apex-splash-progress { display: flex; flex-direction: column; gap: 4px; }
+.apex-splash-progress .track {
+  position: relative;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.apex-splash-progress .track::before,
+.apex-splash-progress .track::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  background: var(--apex-orange);
+  transform: translateY(-50%) rotate(45deg);
+}
+.apex-splash-progress .track::before { left: -3px; }
+.apex-splash-progress .track::after  { right: -3px; background: var(--apex-cyan); }
+.apex-splash-progress .bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--apex-orange) 0%, var(--apex-gold) 50%, var(--apex-cyan) 100%);
+  box-shadow: 0 0 12px rgba(255, 90, 31, 0.55);
+  transition: width 90ms linear;
+}
+.apex-splash-progress .labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85em;
+  color: var(--apex-ink-mute);
+  letter-spacing: 0.2em;
+}
+.apex-splash-progress .labels .right {
+  color: var(--apex-cyan);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tip rotando */
+.apex-splash-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  background: var(--apex-pane-soft);
+  border-left: 2px solid var(--apex-cyan);
+  font-family: var(--apex-tech);
+  font-size: clamp(11px, 1.7vh, 14px);
+  letter-spacing: 0.06em;
+  color: var(--apex-ink-soft);
+  text-transform: none;
+}
+.apex-splash-tip .prefix {
+  flex-shrink: 0;
+  color: var(--apex-cyan);
+  font-family: var(--apex-mono);
+  font-size: 0.78em;
+  letter-spacing: 0.18em;
+}
+.apex-splash-tip .msg {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Footer tag fixed bottom-center */
+.apex-splash-bottom-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--apex-mono);
+  font-size: clamp(7px, 1.1vh, 9px);
+  letter-spacing: 0.4em;
+  color: var(--apex-ink-faint);
+  pointer-events: none;
+}
+
+/* ----- Responsive: Tier U (Z-Flip / ultra-short landscape) ----- */
+@media (orientation: landscape) and (max-height: 430px) {
+  .apex-splash {
+    grid-template-rows: auto 1fr auto;
+    padding: 8px 16px 14px;
+    gap: 6px;
+  }
+  .apex-splash-corner { width: 22px; height: 22px; }
+  .apex-splash-corner.tl, .apex-splash-corner.tr { top: 6px; }
+  .apex-splash-corner.bl, .apex-splash-corner.br { bottom: 6px; }
+  .apex-splash-corner.tl, .apex-splash-corner.bl { left: 6px; }
+  .apex-splash-corner.tr, .apex-splash-corner.br { right: 6px; }
+  .apex-splash-title { font-size: clamp(34px, 14vh, 60px); }
+  .apex-splash-eyebrow { font-size: 9px; }
+  .apex-splash-sub { font-size: 9px; letter-spacing: 0.32em; }
+  .apex-splash-sub .bar { width: 28px; }
+  .apex-splash-foot { gap: 4px; font-size: 9px; }
+  .apex-splash-boot {
+    max-height: 72px;
+    padding: 6px 10px;
+    gap: 1px;
+  }
+  /* En Tier U mostramos sólo las últimas 4 líneas del boot */
+  .apex-splash-boot .boot-line:nth-child(-n+3) { display: none; }
+  .apex-splash-tip { padding: 4px 8px; font-size: 11px; }
+  .apex-splash-bottom-tag { display: none; }
+}
+
+/* ----- Mobile portrait — el RotateLockOverlay se encarga de bloquear,
+   pero por las dudas, reducimos densidad ----- */
+@media (orientation: portrait) and (max-width: 720px) {
+  .apex-splash-title { font-size: clamp(40px, 9vh, 70px); }
+  .apex-splash-publisher .lbl { font-size: 0.85em; }
+}
+
+/* Reduce motion: cancelamos glitch + scan beam, dejamos sólo fades */
+@media (prefers-reduced-motion: reduce) {
+  .apex-splash,
+  .apex-splash-scan,
+  .apex-splash-title::before,
+  .apex-splash-title::after,
+  .apex-splash-corner,
+  .apex-splash-publisher .dot,
+  .apex-splash-boot .caret,
+  .apex-splash-version .live .pulse {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .apex-splash-title::before,
+  .apex-splash-title::after { display: none; }
+}
