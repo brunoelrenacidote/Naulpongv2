@@ -2,10 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ComponentType } from "react";
+import {
+  IconHelp,
+  IconPlay,
+  IconSettings,
+  IconSlotMachine,
+} from "@/components/lobby/icons";
 
 interface NavItem {
   href: string;
-  glyph: string;
+  Icon: ComponentType<{ size?: number }>;
   label: string;
   match: (path: string) => boolean;
 }
@@ -13,25 +20,25 @@ interface NavItem {
 const ITEMS: NavItem[] = [
   {
     href: "/perfil",
-    glyph: "⚙",
+    Icon: IconSettings,
     label: "PERFIL",
     match: (p) => p.startsWith("/perfil"),
   },
   {
     href: "/",
-    glyph: "▶",
+    Icon: IconPlay,
     label: "JUGAR",
     match: (p) => p === "/" || p.startsWith("/play"),
   },
   {
     href: "/luck-royale",
-    glyph: "❖",
+    Icon: IconSlotMachine,
     label: "LUCK",
     match: (p) => p.startsWith("/luck-royale"),
   },
   {
     href: "/about",
-    glyph: "?",
+    Icon: IconHelp,
     label: "GUÍA",
     match: (p) => p.startsWith("/about"),
   },
@@ -61,6 +68,7 @@ export default function BottomNav() {
     <nav className="bottom-nav v2" aria-label="Navegación principal">
       {ITEMS.map((item) => {
         const active = item.match(pathname);
+        const Icon = item.Icon;
         return (
           <Link
             key={item.href}
@@ -69,7 +77,7 @@ export default function BottomNav() {
             aria-current={active ? "page" : undefined}
           >
             <span className="glyph" aria-hidden>
-              {item.glyph}
+              <Icon size={20} />
             </span>
             <span>{item.label}</span>
           </Link>

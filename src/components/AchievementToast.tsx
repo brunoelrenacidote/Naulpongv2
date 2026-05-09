@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Achievement } from "@/lib/stats";
+import { IconStar } from "@/components/lobby/icons";
 
 interface Props {
   achievements: Achievement[];
@@ -24,10 +25,10 @@ export default function AchievementToast({ achievements, onDone }: Props) {
         className="achievement-toast font-press flex items-center gap-3 rounded-md border border-[var(--neon-yellow)]/70 bg-black/80 px-4 py-2 backdrop-blur"
       >
         <span
-          className="text-[10px] tracking-widest text-[var(--neon-yellow)]"
+          className="inline-flex items-center gap-1.5 text-[10px] tracking-widest text-[var(--neon-yellow)]"
           style={{ textShadow: "0 0 6px #ffd95c" }}
         >
-          ★ LOGRO
+          <IconStar size={12} /> LOGRO
         </span>
         <div className="flex flex-col text-left">
           <span className="text-[11px] tracking-widest text-white">

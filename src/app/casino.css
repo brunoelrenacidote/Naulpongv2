@@ -218,7 +218,14 @@
 }
 
 .casino-marquee-flank {
-  font-size: clamp(20px, 4vw, 38px);
+  display: inline-grid;
+  place-items: center;
+  color: var(--casino-gold-bright);
+  filter: drop-shadow(0 0 6px var(--casino-gold));
+}
+.casino-marquee-flank svg {
+  width: clamp(16px, 3vw, 22px);
+  height: clamp(16px, 3vw, 22px);
 }
 
 /* === Slot machine cabinet === */
@@ -403,9 +410,13 @@
   height: 56px;
   display: grid;
   place-items: center;
-  font-size: 36px;
-  line-height: 1;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6));
+  color: var(--casino-gold-bright);
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.6))
+    drop-shadow(0 0 10px rgba(247, 201, 72, 0.45));
+}
+.casino-reel-cell svg {
+  width: 32px;
+  height: 32px;
 }
 
 /* Cost banner under reels */
@@ -426,11 +437,18 @@
   color: rgba(255, 224, 102, 0.85);
 }
 .casino-cost-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-display, var(--display));
   font-size: 14px;
   letter-spacing: 0.18em;
   color: #fff;
   text-shadow: 0 0 8px rgba(247, 201, 72, 0.6);
+}
+.casino-cost-value svg {
+  color: var(--casino-gold-bright);
+  filter: drop-shadow(0 0 4px rgba(247, 201, 72, 0.7));
 }
 .casino-cost-value.warn { color: #ff9b9b; text-shadow: 0 0 8px rgba(255, 75, 75, 0.6); }
 
@@ -582,8 +600,13 @@
   filter: grayscale(0.6);
 }
 .casino-spin-btn .coin {
-  font-size: 18px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--casino-gold-bright);
   filter: drop-shadow(0 0 6px var(--casino-gold));
+}
+.casino-spin-btn svg {
+  display: block;
 }
 
 /* === Reveal card under cabinet === */
@@ -629,11 +652,15 @@
   place-items: center;
   width: 64px;
   height: 64px;
-  font-size: 36px;
   background: rgba(0, 0, 0, 0.45);
   border-radius: 8px;
   border: 1px solid rgba(247, 201, 72, 0.35);
+  color: var(--casino-gold-bright);
   filter: drop-shadow(0 0 8px rgba(247, 201, 72, 0.5));
+}
+.casino-reveal-empty svg {
+  color: var(--casino-gold-bright);
+  filter: drop-shadow(0 0 6px rgba(247, 201, 72, 0.5));
 }
 
 .casino-reveal-body {
@@ -733,6 +760,9 @@
   margin-bottom: 12px;
 }
 .casino-collection-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--font-display, var(--display));
   font-size: 13px;
   letter-spacing: 0.22em;
@@ -804,9 +834,11 @@
 .casino-card.r-common .casino-card-rarity { color: #aef0ff; }
 
 .casino-card-glyph {
-  font-size: 28px;
-  line-height: 1;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.5));
+  display: grid;
+  place-items: center;
+  color: var(--casino-gold-bright);
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 8px rgba(247, 201, 72, 0.4));
 }
 .casino-card-name {
   font-family: var(--font-body, var(--body));
@@ -827,8 +859,18 @@
   position: absolute;
   top: 6px;
   right: 6px;
-  font-size: 12px;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 240, 200, 0.85);
   filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.7));
+}
+.casino-foot-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.casino-link-btn svg {
+  vertical-align: middle;
 }
 
 /* === Footer / extras === */
@@ -866,7 +908,9 @@
   text-align: center;
 }
 .casino-locked-glyph {
-  font-size: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--casino-gold-bright);
   filter: drop-shadow(0 0 10px var(--casino-gold));
 }
 .casino-locked-title {
@@ -1024,6 +1068,13 @@
   letter-spacing: 0.22em;
   color: #fff;
   text-shadow: 0 0 6px rgba(255, 80, 75, 0.6);
+}
+.luck-chip-icon {
+  display: inline-grid;
+  place-items: center;
+  vertical-align: -2px;
+  color: var(--casino-gold-bright);
+  filter: drop-shadow(0 0 4px rgba(247, 201, 72, 0.6));
 }
 
 /* === Responsive === */

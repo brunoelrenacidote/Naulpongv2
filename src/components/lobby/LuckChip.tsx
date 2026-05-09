@@ -9,6 +9,13 @@ import {
 } from "@/lib/luck-royale-client";
 import { COLLECTIBLE_ITEMS } from "@/lib/luck-royale";
 import { saveUnlocked } from "@/lib/unlocked-cache";
+import {
+  IconArrowRight,
+  IconCloud,
+  IconGem,
+  IconSlotMachine,
+  IconTicket,
+} from "./icons";
 
 /**
  * Tarjeta CTA estilo casino para el panel derecho del lobby. Muestra el
@@ -61,7 +68,10 @@ export default function LuckChip() {
       >
         <span className="luck-chip-eyebrow">[ Cloud Only ]</span>
         <h3 className="luck-chip-title">
-          <span aria-hidden>🎰</span> LUCK ROYALE
+          <span className="luck-chip-icon" aria-hidden>
+            <IconSlotMachine size={18} />
+          </span>
+          LUCK ROYALE
         </h3>
         <p className="luck-chip-sub">
           Iniciá sesión para girar boletos y desbloquear al Morro
@@ -69,9 +79,15 @@ export default function LuckChip() {
         </p>
         <div className="luck-chip-row">
           <span className="luck-chip-tickets">
-            <span aria-hidden>☁</span> NUBE
+            <span className="luck-chip-icon" aria-hidden>
+              <IconCloud size={12} />
+            </span>
+            NUBE
           </span>
-          <span className="luck-chip-cta">ENTRAR ▶</span>
+          <span className="luck-chip-cta">
+            ENTRAR
+            <IconArrowRight size={11} />
+          </span>
         </div>
       </Link>
     );
@@ -93,7 +109,10 @@ export default function LuckChip() {
     >
       <span className="luck-chip-eyebrow">[ Casino · Sección 03 ]</span>
       <h3 className="luck-chip-title">
-        <span aria-hidden>🎰</span> LUCK ROYALE
+        <span className="luck-chip-icon" aria-hidden>
+          <IconSlotMachine size={18} />
+        </span>
+        LUCK ROYALE
       </h3>
       <p className="luck-chip-sub">
         {canSpin
@@ -102,16 +121,26 @@ export default function LuckChip() {
       </p>
       <div className="luck-chip-row">
         <span className="luck-chip-tickets">
-          <span aria-hidden>🎟</span>
+          <span className="luck-chip-icon" aria-hidden>
+            <IconTicket size={12} />
+          </span>
           <b>{tickets}</b> BOLETOS
         </span>
-        <span className="luck-chip-tickets" aria-label="Items desbloqueados">
-          <span aria-hidden>❖</span>
+        <span
+          className="luck-chip-tickets"
+          aria-label="Items desbloqueados"
+        >
+          <span className="luck-chip-icon" aria-hidden>
+            <IconGem size={12} />
+          </span>
           <b>
             {owned}/{total}
           </b>
         </span>
-        <span className="luck-chip-cta">{canSpin ? "GIRAR ▶" : "VER ▶"}</span>
+        <span className="luck-chip-cta">
+          {canSpin ? "GIRAR" : "VER"}
+          <IconArrowRight size={11} />
+        </span>
       </div>
     </Link>
   );

@@ -3,6 +3,7 @@ import Link from "next/link";
 import AuthButton from "@/components/AuthButton";
 import ProfilePanel from "@/components/ProfilePanel";
 import RotateLockOverlay from "@/components/lobby/RotateLockOverlay";
+import { IconCloud } from "@/components/lobby/icons";
 
 export const metadata: Metadata = {
   title: "Perfil — NauLPong",
@@ -60,7 +61,9 @@ export default function ProfilePage() {
                 <span className="console-panel-bracket bl" aria-hidden />
                 <span className="console-panel-bracket br" aria-hidden />
                 <h2 className="console-panel-title">
-                  <span className="glyph">☁</span>
+                  <span className="glyph">
+                    <IconCloud size={14} />
+                  </span>
                   SESIÓN
                 </h2>
                 <AuthButton />

@@ -11,7 +11,7 @@ import {
 } from "@/lib/character-storage";
 import type { CharacterId } from "@/lib/game-types";
 import { loadUnlocked, UNLOCKED_EVENT } from "@/lib/unlocked-cache";
-import { IconArrowLeft, IconArrowRight } from "./icons";
+import { IconArrowLeft, IconArrowRight, IconLock, IconTicket } from "./icons";
 import {
   IconBoltTactical,
   IconPaddle,
@@ -168,7 +168,9 @@ export default function LegendCard() {
             <CharacterPreview id={id} scale={9} glow={color} />
             {isLocked ? (
               <div className="legend-lock-overlay" aria-hidden>
-                <span className="legend-lock-glyph">🔒</span>
+                <span className="legend-lock-glyph">
+                  <IconLock size={28} />
+                </span>
                 <span className="legend-lock-tag">BLOQUEADO</span>
               </div>
             ) : null}
@@ -209,7 +211,7 @@ export default function LegendCard() {
             className="legend-unlock-cta"
             aria-label="Ir al Luck Royale para desbloquear"
           >
-            🎟 DESBLOQUEAR EN LUCK ROYALE
+            <IconTicket size={14} /> DESBLOQUEAR EN LUCK ROYALE
           </Link>
         ) : null}
       </aside>

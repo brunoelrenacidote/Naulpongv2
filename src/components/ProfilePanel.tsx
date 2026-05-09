@@ -11,6 +11,7 @@ import {
   loadUnlocked,
   winRate,
 } from "@/lib/stats";
+import { IconBot, IconStar } from "@/components/lobby/icons";
 
 function readNick(): string {
   if (typeof window === "undefined") return "";
@@ -160,7 +161,9 @@ export default function ProfilePanel({ cloudSync }: { cloudSync?: ReactNode }) {
           <span className="console-panel-bracket bl" aria-hidden />
           <span className="console-panel-bracket br" aria-hidden />
           <h2 className="console-panel-title">
-            <span className="glyph">⌬</span>
+            <span className="glyph">
+              <IconBot size={14} />
+            </span>
             VS BOT
           </h2>
           <div className="console-stat-grid cols-3">
@@ -285,7 +288,9 @@ export default function ProfilePanel({ cloudSync }: { cloudSync?: ReactNode }) {
           <span className="console-panel-bracket bl" aria-hidden />
           <span className="console-panel-bracket br" aria-hidden />
           <h2 className="console-panel-title">
-            <span className="glyph">★</span>
+            <span className="glyph">
+              <IconStar size={14} />
+            </span>
             LOGROS
             <span className="count" aria-label="Logros desbloqueados">
               {totalUnlocked}/{achievements.length}
@@ -305,7 +310,7 @@ export default function ProfilePanel({ cloudSync }: { cloudSync?: ReactNode }) {
                     } as React.CSSProperties}
                   >
                     <span className="star" aria-hidden>
-                      {got ? "★" : "☆"}
+                      <IconStar size={14} />
                     </span>
                     <div className="flex flex-col min-w-0">
                       <span className="name">{a.name}</span>

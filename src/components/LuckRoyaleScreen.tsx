@@ -20,6 +20,20 @@ import {
 } from "@/lib/luck-royale";
 import { saveUnlocked } from "@/lib/unlocked-cache";
 import { sfxUiClick, hapticTap } from "@/lib/sounds";
+import ItemIcon from "@/components/icons/ItemIcon";
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconCoin,
+  IconGem,
+  IconHelp,
+  IconHexagon,
+  IconHourglass,
+  IconLock,
+  IconStar,
+  IconTicket,
+  IconWarn,
+} from "@/components/lobby/icons";
 
 const RARITY_LABEL: Record<LuckItemRarity, string> = {
   common: "COMÚN",
@@ -27,24 +41,24 @@ const RARITY_LABEL: Record<LuckItemRarity, string> = {
   legendary: "LEGENDARY",
 };
 
-const REEL_GLYPHS: readonly string[] = LUCK_POOL.map((it) => it.glyph);
+const REEL_ITEM_IDS: readonly string[] = LUCK_POOL.map((it) => it.id);
 /** Pad para que la tira sea suficientemente larga durante el spin. */
 const STRIP_LENGTH = 24;
 
 function makeRandomStrip(): string[] {
   const out: string[] = [];
   for (let i = 0; i < STRIP_LENGTH; i++) {
-    out.push(REEL_GLYPHS[i % REEL_GLYPHS.length]);
+    out.push(REEL_ITEM_IDS[i % REEL_ITEM_IDS.length]);
   }
   return out;
 }
 
-function makeLandStrip(finalGlyph: string): string[] {
-  // El centro (índice 1) cae en la payline; rellenamos arriba/abajo con
-  // glyphs random que sirven de antesala visual.
-  const above = REEL_GLYPHS[Math.floor(Math.random() * REEL_GLYPHS.length)];
-  const below = REEL_GLYPHS[Math.floor(Math.random() * REEL_GLYPHS.length)];
-  return [above, finalGlyph, below];
+function makeLandStrip(finalId: string): string[] {
+  const above =
+    REEL_ITEM_IDS[Math.floor(Math.random() * REEL_ITEM_IDS.length)];
+  const below =
+    REEL_ITEM_IDS[Math.floor(Math.random() * REEL_ITEM_IDS.length)];
+  return [above, finalId, below];
 }
 
 /**
@@ -53,6 +67,10 @@ function makeLandStrip(finalGlyph: string): string[] {
  * arriba, slot machine con cromo + 3 reels en el centro, palanca a la
  * derecha (y un botón rojo grande siempre visible). Reveal card debajo
  * y drawer de colección al final.
+ *
+ * Iconografía: usa SVG inline desde `lobby/icons` y el helper
+ * `<ItemIcon id=...>` para renderizar los items del pool sin recurrir
+ * a emojis.
  */
 export default function LuckRoyaleScreen() {
   const [hydrated, setHydrated] = useState(false);
@@ -125,8 +143,6 @@ export default function LuckRoyaleScreen() {
     try {
       const [result] = await Promise.all([
         apiLuckRoyaleSpin(session.token),
-        // Espera mínima para que las animaciones de los 3 reels alcancen
-        // a lucirse antes del reveal.
         new Promise<void>((r) => setTimeout(r, 1400)),
       ]);
       setLast(result);
@@ -142,7 +158,6 @@ export default function LuckRoyaleScreen() {
       saveUnlocked(result.unlockedItems);
 
       if (result.item.rarity === "legendary" && !result.duplicate) {
-        // Coin shower: render 24 monedas con delay aleatorio.
         const seeds: number[] = [];
         for (let i = 0; i < 24; i++) seeds.push(Math.random());
         setCoins(seeds);
@@ -171,7 +186,8 @@ export default function LuckRoyaleScreen() {
         {/* === Top status bar === */}
         <header className="casino-statusbar">
           <Link href="/" className="casino-back" aria-label="Volver al lobby">
-            ◀ LOBBY
+            <IconArrowLeft size={14} />
+            LOBBY
           </Link>
           <div className="casino-counters" role="status">
             {hydrated && session ? (
@@ -180,14 +196,14 @@ export default function LuckRoyaleScreen() {
                   className="casino-chip"
                   aria-label={`Boletos disponibles: ${tickets}`}
                 >
-                  <span aria-hidden>🎟</span>
+                  <IconTicket size={14} />
                   <b>{tickets}</b> BOLETOS
                 </span>
                 <span
                   className="casino-chip cyan"
                   aria-label={`Items desbloqueados: ${collectedCount} de ${totalCollectibles}`}
                 >
-                  <span aria-hidden>❖</span>
+                  <IconGem size={14} />
                   <b>
                     {collectedCount}/{totalCollectibles}
                   </b>{" "}
@@ -206,11 +222,11 @@ export default function LuckRoyaleScreen() {
         <section className="casino-marquee" aria-label="Cabecera del casino">
           <span className="casino-marquee-sub">
             <span className="casino-marquee-flank" aria-hidden>
-              ★
+              <IconStar size={16} />
             </span>{" "}
             JACKPOT NIGHTS{" "}
             <span className="casino-marquee-flank" aria-hidden>
-              ★
+              <IconStar size={16} />
             </span>
           </span>
           <h1 className="casino-marquee-title">LUCK ROYALE</h1>
@@ -254,7 +270,7 @@ export default function LuckRoyaleScreen() {
                         key={reelIdx}
                         idx={reelIdx}
                         spinning={spinning}
-                        landedGlyph={last?.item.glyph ?? null}
+                        landedItemId={last?.item.id ?? null}
                       />
                     ))}
                   </div>
@@ -267,7 +283,8 @@ export default function LuckRoyaleScreen() {
                       tickets < spinCost ? "warn" : ""
                     }`}
                   >
-                    {spinCost} 🎟 ·{" "}
+                    <IconTicket size={14} />
+                    {spinCost} ·{" "}
                     {tickets < spinCost
                       ? "BOLETOS INSUFICIENTES"
                       : `BALANCE ${tickets}`}
@@ -286,7 +303,7 @@ export default function LuckRoyaleScreen() {
                   }
                 >
                   <span className="coin" aria-hidden>
-                    🪙
+                    <IconCoin size={20} />
                   </span>
                   {spinning
                     ? "GIRANDO..."
@@ -294,7 +311,7 @@ export default function LuckRoyaleScreen() {
                       ? `BOLETOS INSUFICIENTES`
                       : `TIRAR · ${spinCost} BOLETOS`}
                   <span className="coin" aria-hidden>
-                    🪙
+                    <IconCoin size={20} />
                   </span>
                 </button>
 
@@ -307,8 +324,12 @@ export default function LuckRoyaleScreen() {
                       fontSize: 12,
                       letterSpacing: "0.12em",
                       margin: 0,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 8,
                     }}
                   >
+                    <IconWarn size={14} />
                     {spinErr}
                   </p>
                 ) : null}
@@ -354,7 +375,9 @@ export default function LuckRoyaleScreen() {
               aria-label="Tu colección de items"
             >
               <header className="casino-collection-header">
-                <h2 className="casino-collection-title">📦 COLECCIÓN</h2>
+                <h2 className="casino-collection-title">
+                  <IconGem size={14} /> COLECCIÓN
+                </h2>
                 <span className="casino-collection-progress">
                   {collectedCount} / {totalCollectibles} desbloqueados
                 </span>
@@ -380,7 +403,10 @@ export default function LuckRoyaleScreen() {
                 ganás. Cooldown 30s.
               </span>
               <span>
-                <Link href="/">▶ JUGAR PARA GANAR BOLETOS</Link>
+                <Link href="/" className="casino-foot-link">
+                  <IconArrowRight size={11} />
+                  JUGAR PARA GANAR BOLETOS
+                </Link>
                 {" · "}
                 <Link href="/perfil">PERFIL</Link>
               </span>
@@ -395,33 +421,33 @@ export default function LuckRoyaleScreen() {
 function Reel({
   idx,
   spinning,
-  landedGlyph,
+  landedItemId,
 }: {
   idx: number;
   spinning: boolean;
-  landedGlyph: string | null;
+  landedItemId: string | null;
 }) {
-  // Usamos un pivote para forzar re-mount cuando empieza un giro nuevo,
-  // así el ::after de aterrizaje se reinicia en cada spin.
-  const stripKey = `${spinning ? "spin" : landedGlyph ?? "idle"}-${idx}`;
+  // Pivote para forzar re-mount cuando empieza un giro nuevo, así la
+  // animación de aterrizaje se reinicia en cada spin.
+  const stripKey = `${spinning ? "spin" : landedItemId ?? "idle"}-${idx}`;
   const strip = spinning
     ? makeRandomStrip()
-    : landedGlyph
-      ? makeLandStrip(landedGlyph)
-      : makeLandStrip(REEL_GLYPHS[idx % REEL_GLYPHS.length]);
+    : landedItemId
+      ? makeLandStrip(landedItemId)
+      : makeLandStrip(REEL_ITEM_IDS[idx % REEL_ITEM_IDS.length]);
 
   const cls = spinning
     ? `casino-reel-strip spin spin-${idx}`
-    : landedGlyph
+    : landedItemId
       ? `casino-reel-strip land land-${idx}`
       : "casino-reel-strip";
 
   return (
     <div className="casino-reel" aria-hidden>
       <div key={stripKey} className={cls}>
-        {strip.map((g, i) => (
+        {strip.map((id, i) => (
           <span className="casino-reel-cell" key={`${stripKey}-${i}`}>
-            {g}
+            <ItemIcon id={id} size={32} />
           </span>
         ))}
       </div>
@@ -441,7 +467,7 @@ function RevealBody({ result }: { result: SpinResult }) {
   return (
     <>
       <span className="casino-reveal-glyph" aria-hidden>
-        {result.item.glyph}
+        <ItemIcon id={result.item.id} size={36} />
       </span>
       <div className="casino-reveal-body">
         <span className="casino-reveal-rarity">
@@ -462,7 +488,9 @@ function RevealBody({ result }: { result: SpinResult }) {
 function RevealEmpty() {
   return (
     <span className="casino-reveal-empty">
-      <span aria-hidden>⌬</span>
+      <span aria-hidden>
+        <IconHexagon size={18} />
+      </span>
       Tirá la palanca para descubrir tu próximo premio.
     </span>
   );
@@ -488,7 +516,11 @@ function CollectionCard({
         {RARITY_LABEL[item.rarity]}
       </span>
       <span className="casino-card-glyph" aria-hidden>
-        {unlocked ? item.glyph : "?"}
+        {unlocked ? (
+          <ItemIcon id={item.id} size={28} />
+        ) : (
+          <IconHelp size={28} />
+        )}
       </span>
       <span className="casino-card-name">{item.name}</span>
       <span className="casino-card-status">
@@ -496,7 +528,7 @@ function CollectionCard({
       </span>
       {!unlocked ? (
         <span className="casino-card-lock" aria-hidden>
-          🔒
+          <IconLock size={14} />
         </span>
       ) : null}
     </article>
@@ -507,7 +539,7 @@ function NotLoggedPanel() {
   return (
     <section className="casino-locked" role="alert">
       <span className="casino-locked-glyph" aria-hidden>
-        🔒
+        <IconLock size={42} />
       </span>
       <h2 className="casino-locked-title">ACCESO RESTRINGIDO</h2>
       <p className="casino-locked-desc">
@@ -524,7 +556,7 @@ function NotLoggedPanel() {
         }}
       >
         <Link href="/login" className="casino-link-btn">
-          ▶ INICIAR SESIÓN
+          <IconArrowRight size={14} /> INICIAR SESIÓN
         </Link>
         <Link href="/" className="casino-link-btn ghost">
           VOLVER AL LOBBY
@@ -538,7 +570,7 @@ function ErrorPanel({ msg }: { msg: string }) {
   return (
     <section className="casino-locked" role="alert">
       <span className="casino-locked-glyph" aria-hidden>
-        ⚠
+        <IconWarn size={42} />
       </span>
       <h2 className="casino-locked-title">ERROR DEL CASINO</h2>
       <p className="casino-locked-desc">{msg}</p>
@@ -553,7 +585,7 @@ function LoadingPanel() {
   return (
     <section className="casino-locked">
       <span className="casino-locked-glyph" aria-hidden>
-        ⌛
+        <IconHourglass size={42} />
       </span>
       <h2 className="casino-locked-title">CARGANDO TERMINAL...</h2>
     </section>

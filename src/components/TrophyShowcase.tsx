@@ -2,20 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { ACHIEVEMENTS, AchievementId, loadStats, loadUnlocked } from "@/lib/stats";
-
-const ACH_GLYPH: Record<AchievementId, string> = {
-  first_win: "🥇",
-  five_streak: "🔥",
-  ten_wins: "🏆",
-  shutout: "🛡",
-  perfect_seven: "💎",
-  power_collector: "⚡",
-  bot_easy: "🤖",
-  bot_medium: "🤖",
-  bot_hard: "💀",
-  speed_run: "🏃",
-  veteran: "👑",
-};
+import AchievementIcon from "@/components/icons/AchievementIcon";
+import { IconTrophy } from "@/components/lobby/icons";
 
 /**
  * Vitrina de trofeos / progreso estilo Brawl Stars en la home.
@@ -96,7 +84,7 @@ export default function TrophyShowcase() {
     <div className="flex w-full max-w-md flex-col gap-3">
       <div className="trophy-slot">
         <span className="ts-icon" aria-hidden>
-          🏆
+          <IconTrophy size={28} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex items-baseline justify-between gap-2">
@@ -127,7 +115,9 @@ export default function TrophyShowcase() {
             title={ACHIEVEMENTS[c.id].name}
             aria-label={`${ACHIEVEMENTS[c.id].name}${c.unlocked ? "" : " (bloqueado)"}`}
           >
-            <span className="ach-glyph">{ACH_GLYPH[c.id]}</span>
+            <span className="ach-glyph">
+              <AchievementIcon id={c.id} size={22} />
+            </span>
           </div>
         ))}
       </div>

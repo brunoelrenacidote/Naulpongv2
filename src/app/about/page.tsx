@@ -1,6 +1,7 @@
 import Link from "next/link";
 import RotateLockOverlay from "@/components/lobby/RotateLockOverlay";
 import { POWER_EMOJIS, POWER_IDS, POWER_LABELS, type PowerId } from "@/lib/game-types";
+import { IconBolt, IconStar } from "@/components/lobby/icons";
 
 export const metadata = {
   title: "Cómo se juega — NauLPong",
@@ -132,7 +133,9 @@ export default function About() {
                 </h2>
                 <ul className="console-bullet-list">
                   <li>
-                    <b>⚡ Rápida</b> — emparejamos contra random
+                    <b>
+                      <IconBolt size={12} /> Rápida
+                    </b>{" "}— emparejamos contra random
                   </li>
                   <li>
                     <b>🎮 Crear Sala</b> — código de 4 letras
@@ -156,7 +159,9 @@ export default function About() {
                 <span className="console-panel-bracket bl" aria-hidden />
                 <span className="console-panel-bracket br" aria-hidden />
                 <h2 className="console-panel-title">
-                  <span className="glyph">★</span>
+                  <span className="glyph">
+                    <IconStar size={14} />
+                  </span>
                   LOS 8 PODERES
                   <span className="count">{POWER_IDS.length}/8</span>
                 </h2>
