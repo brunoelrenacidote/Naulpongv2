@@ -246,7 +246,7 @@
   filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.55));
 }
 .console-bezel-corner.bl {
-  bottom: calc(max(10px, env(safe-area-inset-bottom)) + 78px);
+  bottom: max(10px, env(safe-area-inset-bottom));
   left: 10px;
   border-right: 0;
   border-top: 0;
@@ -254,7 +254,7 @@
   filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.55));
 }
 .console-bezel-corner.br {
-  bottom: calc(max(10px, env(safe-area-inset-bottom)) + 78px);
+  bottom: max(10px, env(safe-area-inset-bottom));
   right: 10px;
   border-left: 0;
   border-top: 0;
@@ -280,7 +280,7 @@
   padding:
     calc(max(28px, env(safe-area-inset-top)) + 16px)
     clamp(14px, 4vw, 28px)
-    calc(96px + env(safe-area-inset-bottom));
+    calc(28px + env(safe-area-inset-bottom));
 }
 
 /* Status bar superior — chip publisher + chip versión LIVE */
@@ -314,6 +314,39 @@
 .console-statusbar .chip.cyan {
   border-color: rgba(0, 212, 255, 0.4);
   color: var(--console-cyan-2);
+}
+/* Chip clickable estilo "◀ LOBBY" en la statusbar */
+a.console-statusbar-chip,
+.console-statusbar a.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px 5px 10px;
+  font-family: var(--console-mono);
+  font-size: inherit;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--console-cyan-2);
+  background: var(--console-pane-soft);
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  text-decoration: none;
+  clip-path: var(--console-clip-tag);
+  -webkit-clip-path: var(--console-clip-tag);
+  transition: color 140ms ease, border-color 140ms ease,
+    background 140ms ease, transform 140ms ease;
+}
+a.console-statusbar-chip:hover,
+.console-statusbar a.chip:hover {
+  color: var(--console-ink);
+  border-color: var(--console-cyan);
+  background: rgba(0, 212, 255, 0.08);
+  transform: translateX(-1px);
+}
+a.console-statusbar-chip .arrow,
+.console-statusbar a.chip .arrow {
+  font-size: 10px;
+  line-height: 1;
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.7);
 }
 .console-statusbar .dot {
   width: 7px;
@@ -1207,7 +1240,7 @@
     padding-top: calc(max(10px, env(safe-area-inset-top)) + 10px);
     padding-right: clamp(20px, 4vw, 36px);
     padding-left: clamp(20px, 4vw, 36px);
-    padding-bottom: calc(74px + env(safe-area-inset-bottom));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
     gap: 10px;
   }
   .console-statusbar { font-size: 8px; }

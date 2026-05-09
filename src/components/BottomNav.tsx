@@ -40,6 +40,11 @@ export default function BottomNav() {
   // the same destinations, plus a big PLAY CTA, and a second nav at the
   // bottom would crowd it.
   if (pathname === "/") return null;
+  // Hide on /perfil and /about — those pages now use the same console HUD
+  // aesthetic as the lobby, with their own top status bar + back link, and
+  // the BottomNav rompe la estética del HUD.
+  if (pathname.startsWith("/perfil")) return null;
+  if (pathname.startsWith("/about")) return null;
 
   return (
     <nav className="bottom-nav v2" aria-label="Navegación principal">

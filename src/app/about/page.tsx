@@ -34,12 +34,18 @@ export default function About() {
       </div>
 
       <div className="console-content">
-        <header className="console-statusbar" aria-hidden>
-          <span className="chip">
-            <span className="dot" />
-            <span>UDDERGAMES // NAULPONG</span>
-          </span>
-          <span className="chip cyan">
+        <header className="console-statusbar">
+          <Link
+            href="/"
+            className="chip"
+            aria-label="Volver al lobby"
+          >
+            <span className="arrow" aria-hidden>
+              ◀
+            </span>
+            <span>LOBBY</span>
+          </Link>
+          <span className="chip cyan" aria-hidden>
             <span>MANUAL · v3.2.1</span>
             <span className="dot green" />
           </span>

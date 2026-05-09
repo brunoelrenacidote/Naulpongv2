@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import AuthButton from "@/components/AuthButton";
 import ProfilePanel from "@/components/ProfilePanel";
 import RotateLockOverlay from "@/components/lobby/RotateLockOverlay";
@@ -24,12 +25,18 @@ export default function ProfilePage() {
       </div>
 
       <div className="console-content">
-        <header className="console-statusbar" aria-hidden>
-          <span className="chip">
-            <span className="dot" />
-            <span>UDDERGAMES // NAULPONG</span>
-          </span>
-          <span className="chip cyan">
+        <header className="console-statusbar">
+          <Link
+            href="/"
+            className="chip"
+            aria-label="Volver al lobby"
+          >
+            <span className="arrow" aria-hidden>
+              ◀
+            </span>
+            <span>LOBBY</span>
+          </Link>
+          <span className="chip cyan" aria-hidden>
             <span>OPERATOR · DOSSIER</span>
             <span className="dot green" />
           </span>
@@ -63,6 +70,18 @@ export default function ProfilePage() {
           </h2>
           <AuthButton />
         </section>
+
+        <Link
+          href="/"
+          className="console-back"
+          aria-label="Volver al lobby"
+          style={{ animationDelay: "480ms" } as React.CSSProperties}
+        >
+          <span className="arrow" aria-hidden>
+            ◀
+          </span>
+          VOLVER AL LOBBY
+        </Link>
       </div>
       </main>
     </>
